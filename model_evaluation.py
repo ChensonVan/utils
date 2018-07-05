@@ -156,9 +156,20 @@ def plot_lift(y_true, y_pred, label='', n_cut=50, ax=None):
     ax.legend(loc='best')
 
 
-def plot_evaluation(df_dic, path='model_evaluations.png'):
+def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False):
+    """
+    Args:
+        df_dic:
+        path:
+        ascending: 
+    
+    Returns:
+    
+    Exampel:
+        plot_evaluation({'YF_v2 + App (train)': [y_train, y_pred_all_train], 'YF_v2 + App (test)': [y_test, y_pred_all]})
+    """
     num_col = len(df_dic) 
-    num_row = 4           
+    num_row = 5           
     
     fig, axs = plt.subplots(num_row, num_col, figsize=(8 * num_col, 6 * num_row), dpi=100)
     
@@ -170,7 +181,11 @@ def plot_evaluation(df_dic, path='model_evaluations.png'):
     plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax[0])
     
     cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
-    lb = list(range(len(cp) - 1, 0, -1))
+    
+    if ascending:
+        lb = list(range(len(cp) - 1, 0, -1))
+    else:
+        lb = list(range(1, len(cp)))
 
     for i, label in enumerate(df_dic.keys()):
         y_true, y_pred = df_dic[label][0], df_dic[label][1]
@@ -181,11 +196,16 @@ def plot_evaluation(df_dic, path='model_evaluations.png'):
         df_bins = sta_groups(y_true, y_pred, cut_points=cp, labels=lb)
         up1, up2 = df_bins['single_overdue_rate'].max() * 120, df_bins['count'].max() * 1.4
         
+        # plot-lift
         sub_ax = axs[2] if num_col > 1 else axs
         plot_lift(y_true, y_pred, label, ax=sub_ax[i])
         
+        # sorting-ability
         sub_ax = axs[3] if num_col > 1 else axs
         sorting_ability(df_bins, upper1=up1, upper2=up2, text=label, ax=sub_ax[i])
+        
+        sub_ax = axs[4] if num_col > 1 else axs
+        plot_acc_od_ps_rc(df_bins, text=label, ax=sub_ax[i])
         plt.tight_layout()
     plt.savefig(path)
 
@@ -327,7 +347,7 @@ def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_
     
     ax.set_ylim([-3, 105])
     ax.set_ylabel('Percentage')
-    ax.set_title(f'{text} accumulate overdue rate & passing rate & good person recall rate')
+    ax.set_title(f'{text} dataset recall-pass curve')
     ax.legend(loc='best')
 
 
