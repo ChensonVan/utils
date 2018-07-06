@@ -188,6 +188,8 @@ def plot_trend_single(df_bins, mean, title, ax=None):
     ax.set_title(title)
     ax.legend()
 
+
+
 def plot_trends(df_meta, cols, interval='day', time_col='apply_time_commit_at', path='data_trends.png'):
     df = df_meta.copy()
     if interval == 'day':
