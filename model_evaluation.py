@@ -198,14 +198,14 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False):
         
         # plot-lift
         sub_ax = axs[2][i] if num_col > 1 else axs[2]
-        plot_lift(y_true, y_pred, label, ax=sub_ax[i])
+        plot_lift(y_true, y_pred, label, ax=sub_ax)
         
         # sorting-ability
         sub_ax = axs[3][i] if num_col > 1 else axs[3]
-        sorting_ability(df_bins, upper1=up1, upper2=up2, text=label, ax=sub_ax[i])
+        sorting_ability(df_bins, upper1=up1, upper2=up2, text=label, ax=sub_ax)
         
         sub_ax = axs[4][i] if num_col > 1 else axs[4]
-        plot_acc_od_ps_rc(df_bins, text=label, ax=sub_ax[i])
+        plot_acc_od_ps_rc(df_bins, text=label, ax=sub_ax)
         plt.tight_layout()
     plt.savefig(path)
 
