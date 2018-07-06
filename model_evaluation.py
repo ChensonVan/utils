@@ -177,8 +177,8 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False):
     y_true_list = [df_dic[lab][0] for lab in label_list]
     y_pred_list = [df_dic[lab][1] for lab in label_list]
     
-    sub_ax = axs[0] if num_col > 1 else axs
-    plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax[0])
+    sub_ax = axs[0][0] if num_col > 1 else axs[0]
+    plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax)
     
     cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
     
@@ -191,23 +191,24 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False):
         y_true, y_pred = df_dic[label][0], df_dic[label][1]
         
         # plot-ks
-        sub_ax = axs[1] if num_col > 1 else axs
-        plot_ks_2(y_true, y_pred, label, ax=sub_ax[i])
+        sub_ax = axs[1][i] if num_col > 1 else axs[1]
+        plot_ks_2(y_true, y_pred, label, ax=sub_ax)
         df_bins = sta_groups(y_true, y_pred, cut_points=cp, labels=lb)
         up1, up2 = df_bins['single_overdue_rate'].max() * 120, df_bins['count'].max() * 1.4
         
         # plot-lift
-        sub_ax = axs[2] if num_col > 1 else axs
+        sub_ax = axs[2][i] if num_col > 1 else axs[2]
         plot_lift(y_true, y_pred, label, ax=sub_ax[i])
         
         # sorting-ability
-        sub_ax = axs[3] if num_col > 1 else axs
+        sub_ax = axs[3][i] if num_col > 1 else axs[3]
         sorting_ability(df_bins, upper1=up1, upper2=up2, text=label, ax=sub_ax[i])
         
-        sub_ax = axs[4] if num_col > 1 else axs
+        sub_ax = axs[4][i] if num_col > 1 else axs[4]
         plot_acc_od_ps_rc(df_bins, text=label, ax=sub_ax[i])
         plt.tight_layout()
     plt.savefig(path)
+
 
     
 def get_cut_points(data, num_of_bins=10):
