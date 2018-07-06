@@ -18,30 +18,30 @@ import math
 
 import os
 
-def cal_overdue(df, tag='datediff', od_value=[0, 1, 3, 7, 14, 30], del_tag=True):
+def cal_overdue(df, col='overdue_days', targets=[0, 1, 3, 7, 14, 30], drop=True):
     '''
     统计逾期率
     '''
-    if tag not in df.columns.tolist():
+    if col not in df.columns.tolist():
         return
-    for i in od_value:
-        df[f'{i}d'] = df[tag].apply(lambda x: 0 if x > -1000 and x < (i+1) else 1)
-    if del_tag:
-        del df[tag]
+    for i in targets:
+        df[f'{i}d'] = df[col].apply(lambda x: 0 if x > -1000 and x < (i+1) else 1)
+    if drop:
+        del df[col]
 
 
-def sta_od_rate(df, od_value=[0, 1, 3, 7, 14, 30]):
+def sta_od_rate(df, targets=[0, 1, 3, 7, 14, 30]):
     '''
     统计各个天数的逾期率
     '''
     od = pd.DataFrame()
-    dn = [f'{n}d' for n in od_value]
-    col = set(df.columns) - set(dn)    
+    dn = [f'{n}d' for n in targets]
+    col = set(df.columns) - set(dn)
     for tag in col:
         tmp_df = df[df[tag].notnull()]
-        for i in od_value:
+        for i in targets:
             od.loc[tag, f'{i}d'] = 1 - tmp_df[f'{i}d'].value_counts(normalize=True)[0]  
-    for i in od_value:
+    for i in targets:
         od.loc['ALL', f'{i}d'] = 1 - df[f'{i}d'].value_counts(normalize=True)[0]  
     return np.round(od, 3)
 
@@ -191,20 +191,20 @@ def cal_woe_iv(x, y, event=1, max_depth=5, min_samples_leaf=0.01, max_leaf_nodes
     return woe_dict, iv
 
 
-def iv_df(df, od_value, columns=None, event=1, max_depth=5, min_samples_leaf=0.01, 
+def iv_df(df, targets, columns=None, event=1, max_depth=5, min_samples_leaf=0.01, 
           max_leaf_nodes=None, bins=20, interval=True, random_state=7):
     '''
     计算所有给定features的WOE，并计算IV
     df:       dataframe
-    od_value: 需要计算的lables的list，即od_value
+    targets: 需要计算的lables的list，即targets
     columns:  如果给出，则算制定的columns，否则算除了od的所有的IV
     '''
     dic = defaultdict(dict)
 
     if columns is None:
-        columns = [c for c in df.columns if c not in od_value]
+        columns = [c for c in df.columns if c not in targets]
 
-    for t in od_value:
+    for t in targets:
         t = f'{t}d'
         for c in columns:
             dic[t][c] = cal_woe_iv(df[c], df[t], event=event, max_depth=max_depth, 
@@ -214,8 +214,9 @@ def iv_df(df, od_value, columns=None, event=1, max_depth=5, min_samples_leaf=0.0
     df.columns = [['IV'] * df.shape[1], df.columns]
     return df
 
+
 import matplotlib.pyplot as plt
-def cal_auc_ks_iv(df, od_value=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=True, precision=3):
+def cal_auc_ks_iv(df, targets=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=True, precision=3):
     '''
     计算 AUC KS 和 IV的值
     并画出对应的AUC图
@@ -224,19 +225,19 @@ def cal_auc_ks_iv(df, od_value=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=
     ac = pd.DataFrame()
     iv = pd.DataFrame()
 
-    dn = [f'{n}d' for n in od_value]
+    dn = [f'{n}d' for n in targets]
     cols = set(df.columns) - set(dn)
     
-    for n in od_value:
+    for n in targets:
         auc_value = []
         ks_value = []   
         iv_value = []
-        
+
         plt.figure(figsize=(6,4), dpi=100)
         for var in cols:
             y_true = df[df[var].notnull()][f'{n}d']
             y_pred = df[df[var].notnull()][var]
-    
+
             # 计算各个指标的 fpr tpr 和 thr  
             fpr, tpr, thr = roc_curve(y_true, y_pred, pos_label=1)    
             
@@ -284,7 +285,6 @@ def cal_auc_ks_iv(df, od_value=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=
     return ac, ks, iv
 
 
-
 def cal_vif(df):
     from statsmodels.stats.outliers_influence import variance_inflation_factor
     vif = pd.DataFrame(index=df.columns.tolist())
@@ -297,14 +297,14 @@ def cal_pearson_cor(df):
     return df.corr()
 
 
-def sorting(df, od_value=[0, 1, 3, 7, 14, 30], asc=[]):
+def sorting(df, targets=[0, 1, 3, 7, 14, 30], asc=[]):
     '''
     df:  待计算数据
     asc: 需要逆序的标签，返回值默认为从高到低排序
          分数越高越好的需要逆序排序，比如芝麻分，新颜分和氪信分
     '''
     data = df.copy()
-    dn = [f'{n}d' for n in od_value]
+    dn = [f'{n}d' for n in targets]
     col = set(data.columns) - set(dn)
     all_od = []
 
@@ -317,7 +317,7 @@ def sorting(df, od_value=[0, 1, 3, 7, 14, 30], asc=[]):
         except:
             data[f'{s}_range'] = pd.cut(x, bins=10, precision=0, retbins=True)[0]
         
-        for i in od_value:
+        for i in targets:
             t = f'{i}d'
             # groupby 这里会少了
             d = data.groupby(f'{s}_range')[t].value_counts(normalize=True, sort=False).xs(1, level=t)
@@ -331,7 +331,7 @@ def sorting(df, od_value=[0, 1, 3, 7, 14, 30], asc=[]):
         all_od += [tmp[f'{s}_od']]
 
     # 部分逆序
-    tag = '_d' + str(od_value[0])
+    tag = '_d' + str(targets[0])
     asc = [_ + tag for _ in asc]
     for i in range(len(all_od)):
         if all_od[i].columns.values[0] in asc:
@@ -341,12 +341,12 @@ def sorting(df, od_value=[0, 1, 3, 7, 14, 30], asc=[]):
     return all_od
 
 
-def sorting_plot(df, all_od, od_value=[0, 1, 3, 7, 14, 30], text=''):
-    dn = [f'{n}d' for n in od_value]
+def sorting_plot(df, all_od, targets=[0, 1, 3, 7, 14, 30], text=''):
+    dn = [f'{n}d' for n in targets]
     col = set(df.columns) - set(dn)
     od = pd.DataFrame()
 
-    for s, t in enumerate(od_value):
+    for s, t in enumerate(targets):
         od_add = pd.DataFrame({dn[s]: [all_od[i].iloc[:,s] for i in range(len(all_od))]})
         od = pd.concat([od, od_add], axis=1)
         
@@ -363,9 +363,9 @@ def sorting_plot(df, all_od, od_value=[0, 1, 3, 7, 14, 30], text=''):
 
 
 
-def plot_overdue_with_bins(df_list, od_value=[0, 1, 3, 7, 14, 30]):
+def plot_overdue_with_bins(df_list, targets=[0, 1, 3, 7, 14, 30]):
     '''
-    根据od_value_list的值，绘制每一箱的逾期率
+    根据targets_list的值，绘制每一箱的逾期率
     '''
     bar_width = 0.5
 
@@ -398,7 +398,7 @@ def plot_overdue_with_bins(df_list, od_value=[0, 1, 3, 7, 14, 30]):
         tag = ' '.join(col.split('_')[:-1])
         plt.title(f'{tag} Overdue Rate') 
         plt.xticks(tick_pos, labels)
-        plt.legend([f'{_}d' for _ in od_value], loc='best')
+        plt.legend([f'{_}d' for _ in targets], loc='best')
         # plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='left')
         plt.grid()
         plt.show()
@@ -406,12 +406,12 @@ def plot_overdue_with_bins(df_list, od_value=[0, 1, 3, 7, 14, 30]):
 
 import matplotlib.colors as colors
 import matplotlib.cm as cm
-def plot_overdue_single(df, od_value=[0, 1, 3, 7, 14, 30]):
+def plot_overdue_single(df, targets=[0, 1, 3, 7, 14, 30]):
     '''
     对columns里面的指标单一绘制，各个od的逾期率
     '''
     bar_width = 0.5
-    x_pos = range(1, len(od_value) + 1)
+    x_pos = range(1, len(targets) + 1)
     labels = list(df.columns)
     bar_len = list(range(1, df.shape[1] + 1))
     tick_pos = [i for i in bar_len]
@@ -430,7 +430,7 @@ def plot_overdue_single(df, od_value=[0, 1, 3, 7, 14, 30]):
         for x, y in zip(x_pos, overdue_dx):
             plt.text(x, y+0.002, f'{y}', ha='center', va='bottom', fontsize=14)
         
-        plt.legend([f'{_}d' for _ in od_value], loc='best')
+        plt.legend([f'{_}d' for _ in targets], loc='best')
         plt.title(f'{idx} Overdue Rate') 
         plt.setp(plt.gca().get_xticklabels(), rotation=0, horizontalalignment='left')
         plt.grid()
