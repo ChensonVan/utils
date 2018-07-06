@@ -12,7 +12,7 @@ class BasicModel(object):
     @abstractmethod
     def train(self, x_train, y_train, x_val, y_val, params=None, is_eval=False, is_verbose=False):
         """ return the predicted result of test data """
-        print('train with model')
+        print('INFO  : Training Model ... ...')
         self.init_model(params)
 
         # print(self.model)
@@ -46,6 +46,15 @@ class BasicModel(object):
     @abstractmethod
     def init_model(self, params):
         pass
+
+
+    def get_fscore(self):
+        if self.model == None:
+            raise Exception('Please fit the data by using model before predict') 
+
+        df  = pd.DataFrame(pd.Series(self.model.get_booster().get_fscore())).reset_index(drop=False)
+        df.columns = ['feature_name', 'feature_importance']
+        return df.sort_values('feature_importance', ascending=False)
 
 
     def get_feature_importance(self, columns_name):
