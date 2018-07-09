@@ -156,7 +156,7 @@ def plot_lift(y_true, y_pred, label='', n_cut=50, ax=None):
     ax.legend(loc='best')
 
 
-def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False):
+def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False):
     """
     Args:
         df_dic:
@@ -180,7 +180,10 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False):
     sub_ax = axs[0][0] if num_col > 1 else axs[0]
     plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax)
     
-    cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
+    if isolate:
+        cp = None
+    else:
+        cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
     
     if ascending:
         lb = list(range(len(cp) - 1, 0, -1))
