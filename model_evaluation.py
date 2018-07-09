@@ -180,15 +180,15 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     sub_ax = axs[0][0] if num_col > 1 else axs[0]
     plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax)
     
-    if isolate:
-        cp = None
-    else:
-        cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
-    
+
+    cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
     if ascending:
         lb = list(range(len(cp) - 1, 0, -1))
     else:
         lb = list(range(1, len(cp)))
+
+    if isolate:
+        cp = None
 
     for i, label in enumerate(df_dic.keys()):
         y_true, y_pred = df_dic[label][0], df_dic[label][1]
