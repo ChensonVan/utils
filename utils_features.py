@@ -40,9 +40,9 @@ def sta_od_rate(df, targets=[0, 1, 3, 7, 14, 30]):
     for tag in col:
         tmp_df = df[df[tag].notnull()]
         for i in targets:
-            od.loc[tag, f'{i}d'] = 1 - tmp_df[f'{i}d'].value_counts(normalize=True)[0]  
+            od.loc[tag, f'{i}d'] = 1 - tmp_df[f'{i}d'].value_counts(normalize=True)[0]
     for i in targets:
-        od.loc['ALL', f'{i}d'] = 1 - df[f'{i}d'].value_counts(normalize=True)[0]  
+        od.loc['ALL', f'{i}d'] = 1 - df[f'{i}d'].value_counts(normalize=True)[0]
     return np.round(od, 3)
 
 def sta_cov_rate(df):
@@ -53,15 +53,32 @@ def sta_cov_rate(df):
     cr['ALL'] = len(df.dropna(how='any')) / len(df)
     return np.round(cr, 3)
 
+def get_labels(df_meta, col, labels=[0, 1, 3, 7, 14, 30]):
+    import datetime
+    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # 现在
+    df = df_meta.copy()
+    od_col = 'overdue_days'
+    if len(col) == 1:
+        od_col = col[0]
+    elif len(col) == 2:
+        df[col[0]].replace('1000-01-01 00:00:00', nowTime, regex=True, inplace=True)
+        df[od_col] = (pd.to_datetime(df[col[0]]) - pd.to_datetime(df[col[1]])).dt.days
+    else:
+        raise ValueError
+
+    for i in labels:
+        df[f'{i}d'] = df[od_col].apply(lambda x: 0 if x <= i else 1)
+    return df
+
 
 def bins_freq(data, num_of_bins=10, labels=None):
     '''
     分箱 - 按照相同的频率分箱
-    
+
     data:    list/pd.Series 数据，用于分箱，一般为分数的连续值
     num_of_bins: 箱子的个数
     labels:  个数和bins的个数相等
-    
+
     return:  分箱后的label
     '''
     # r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=0, retbins=True, labels=labels)
@@ -109,7 +126,7 @@ def get_cut_points(x, y, max_depth=5, min_samples_leaf=0.01, max_leaf_nodes=None
     '''
     根据决策树选出cut_points
     '''
-    dt = DecisionTreeClassifier(max_depth=max_depth, min_samples_leaf=min_samples_leaf, 
+    dt = DecisionTreeClassifier(max_depth=max_depth, min_samples_leaf=min_samples_leaf,
                                 max_leaf_nodes=max_leaf_nodes, random_state=random_state)
     dt.fit(np.array(x).reshape(-1, 1), np.array(y))
     th = dt.tree_.threshold
@@ -191,7 +208,7 @@ def cal_woe_iv(x, y, event=1, max_depth=5, min_samples_leaf=0.01, max_leaf_nodes
     return woe_dict, iv
 
 
-def iv_df(df, targets, columns=None, event=1, max_depth=5, min_samples_leaf=0.01, 
+def iv_df(df, targets, columns=None, event=1, max_depth=5, min_samples_leaf=0.01,
           max_leaf_nodes=None, bins=20, interval=True, random_state=7):
     '''
     计算所有给定features的WOE，并计算IV
@@ -207,8 +224,8 @@ def iv_df(df, targets, columns=None, event=1, max_depth=5, min_samples_leaf=0.01
     for t in targets:
         t = f'{t}d'
         for c in columns:
-            dic[t][c] = cal_woe_iv(df[c], df[t], event=event, max_depth=max_depth, 
-                            min_samples_leaf=min_samples_leaf, max_leaf_nodes=max_leaf_nodes, 
+            dic[t][c] = cal_woe_iv(df[c], df[t], event=event, max_depth=max_depth,
+                            min_samples_leaf=min_samples_leaf, max_leaf_nodes=max_leaf_nodes,
                             bins=bins, interval=interval, random_state=random_state)[1]
     df = pd.DataFrame(dic)
     df.columns = [['IV'] * df.shape[1], df.columns]
@@ -227,10 +244,10 @@ def cal_auc_ks_iv(df, targets=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=T
 
     dn = [f'{n}d' for n in targets]
     cols = set(df.columns) - set(dn)
-    
+
     for n in targets:
         auc_value = []
-        ks_value = []   
+        ks_value = []
         iv_value = []
 
         plt.figure(figsize=(6,4), dpi=100)
@@ -238,20 +255,20 @@ def cal_auc_ks_iv(df, targets=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=T
             y_true = df[df[var].notnull()][f'{n}d']
             y_pred = df[df[var].notnull()][var]
 
-            # 计算各个指标的 fpr tpr 和 thr  
-            fpr, tpr, thr = roc_curve(y_true, y_pred, pos_label=1)    
-            
+            # 计算各个指标的 fpr tpr 和 thr
+            fpr, tpr, thr = roc_curve(y_true, y_pred, pos_label=1)
+
             # 计算AUC值
-            ac_single = auc(fpr, tpr)   
+            ac_single = auc(fpr, tpr)
             if ac_single < 0.5:
                 fpr, tpr, thr = roc_curve(y_true, -y_pred, pos_label=1)
-                ac_single = auc(fpr, tpr)  
+                ac_single = auc(fpr, tpr)
             auc_value.append(ac_single)
 
-            # 计算K-S值            
+            # 计算K-S值
             ks_single = (tpr - fpr).max()
             ks_value.append(ks_single)
-            
+
             # 计算IV值
             iv_single = cal_woe_iv(y_pred, y_true, max_depth=max_depth)[1]
             iv_value.append(iv_single)
@@ -260,22 +277,22 @@ def cal_auc_ks_iv(df, targets=[0, 1, 3, 7, 14, 30], text='', max_depth=2, plot=T
                 # ROC Cureve
                 plt.plot(fpr, tpr, lw=1, label=f'{var}(auc=' + str(round(ac_single, precision)) + ')')
                 plt.plot(fpr, tpr, lw=1)
-        
+
                 # Labels
                 plt.grid()
-                plt.plot([0,1], [0,1], linestyle='--', color=(0.6, 0.6, 0.6))  
-                plt.plot([0, 0, 1], [0, 1, 1], lw=1, linestyle=':', color='black') 
+                plt.plot([0,1], [0,1], linestyle='--', color=(0.6, 0.6, 0.6))
+                plt.plot([0, 0, 1], [0, 1, 1], lw=1, linestyle=':', color='black')
                 plt.xlabel('false positive rate')
-                plt.ylabel('true positive rate') 
-                plt.title(f'{text}ROC for {n}d') 
+                plt.ylabel('true positive rate')
+                plt.title(f'{text}ROC for {n}d')
                 plt.legend(loc='best')
 
         auc_part = pd.DataFrame(auc_value, columns=[f'{n}d'], index=cols)
-        ac = pd.concat([ac, auc_part], axis=1)  
-        
+        ac = pd.concat([ac, auc_part], axis=1)
+
         ks_part  = pd.DataFrame(ks_value, columns=[f'{n}d'], index=cols)
-        ks = pd.concat([ks, ks_part], axis=1)  
-        
+        ks = pd.concat([ks, ks_part], axis=1)
+
         iv_part  = pd.DataFrame(iv_value, columns=[f'{n}d'], index=cols)
         iv = pd.concat([iv, iv_part], axis=1)
 
@@ -309,14 +326,14 @@ def sorting(df, targets=[0, 1, 3, 7, 14, 30], asc=[]):
     all_od = []
 
     tmp = defaultdict(pd.DataFrame)
-    for s in col:    
+    for s in col:
         x = df[s]
         # 连续值分箱， 需要无重复，等间隔？还是等频率？
         try:
             data[f'{s}_range'] = pd.qcut(x, q=np.linspace(0, 1, 11), precision=0, retbins=True)[0]
         except:
             data[f'{s}_range'] = pd.cut(x, bins=10, precision=0, retbins=True)[0]
-        
+
         for i in targets:
             t = f'{i}d'
             # groupby 这里会少了
@@ -326,7 +343,7 @@ def sorting(df, targets=[0, 1, 3, 7, 14, 30], asc=[]):
             d.index = [str(_) for _ in d.index]
             tmp[f'{s}_od'].index = [str(_) for _ in tmp[f'{s}_od'].index ]
             tmp[f'{s}_od'] = pd.concat([tmp[f'{s}_od'], d], axis=1)
-        
+
         tmp[f'{s}_od'].fillna(0, inplace=True)
         all_od += [tmp[f'{s}_od']]
 
@@ -335,9 +352,9 @@ def sorting(df, targets=[0, 1, 3, 7, 14, 30], asc=[]):
     asc = [_ + tag for _ in asc]
     for i in range(len(all_od)):
         if all_od[i].columns.values[0] in asc:
-            all_od[i].sort_index(ascending=True, inplace=True)  
+            all_od[i].sort_index(ascending=True, inplace=True)
             continue
-        all_od[i].sort_index(ascending=False, inplace=True)    
+        all_od[i].sort_index(ascending=False, inplace=True)
     return all_od
 
 
@@ -349,7 +366,7 @@ def sorting_plot(df, all_od, targets=[0, 1, 3, 7, 14, 30], text=''):
     for s, t in enumerate(targets):
         od_add = pd.DataFrame({dn[s]: [all_od[i].iloc[:,s] for i in range(len(all_od))]})
         od = pd.concat([od, od_add], axis=1)
-        
+
         f = plt.figure(figsize=(7, 5), dpi=100)
         x = range(1, 11)
         for i, j in enumerate(col):
@@ -377,7 +394,7 @@ def plot_overdue_with_bins(df_list, targets=[0, 1, 3, 7, 14, 30]):
 
         tmp = np.zeros(len(labels))
         tmp2 = np.zeros(len(labels))
-    
+
         for col in df.columns:
             overdue_dx = np.round(df[col].tolist(), 4)
             ax.bar(bar_len, overdue_dx, bottom=tmp, label=col, width=bar_width, alpha=0.7)
@@ -396,7 +413,7 @@ def plot_overdue_with_bins(df_list, targets=[0, 1, 3, 7, 14, 30]):
                 else:
                     plt.text(x, y, f'{z}', ha='center',  fontsize=14)
         tag = ' '.join(col.split('_')[:-1])
-        plt.title(f'{tag} Overdue Rate') 
+        plt.title(f'{tag} Overdue Rate')
         plt.xticks(tick_pos, labels)
         plt.legend([f'{_}d' for _ in targets], loc='best')
         # plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='left')
@@ -415,9 +432,9 @@ def plot_overdue_single(df, targets=[0, 1, 3, 7, 14, 30]):
     labels = list(df.columns)
     bar_len = list(range(1, df.shape[1] + 1))
     tick_pos = [i for i in bar_len]
-    
+
     for idx in df.index:
-        fig, ax = plt.subplots(figsize=(10, 5))  
+        fig, ax = plt.subplots(figsize=(10, 5))
         overdue_dx = np.round(df.loc[idx, :].tolist(), 4)
         cmap1 = cm.ScalarMappable(colors.Normalize(min(overdue_dx), max(overdue_dx), cm.hot))
         ax.bar(x_pos, overdue_dx, align='center', alpha=0.7, width=bar_width, color=cmap1.to_rgba(overdue_dx))
@@ -429,9 +446,9 @@ def plot_overdue_single(df, targets=[0, 1, 3, 7, 14, 30]):
         # 标数字
         for x, y in zip(x_pos, overdue_dx):
             plt.text(x, y+0.002, f'{y}', ha='center', va='bottom', fontsize=14)
-        
+
         plt.legend([f'{_}d' for _ in targets], loc='best')
-        plt.title(f'{idx} Overdue Rate') 
+        plt.title(f'{idx} Overdue Rate')
         plt.setp(plt.gca().get_xticklabels(), rotation=0, horizontalalignment='left')
         plt.grid()
         plt.show()
@@ -466,7 +483,7 @@ def feature_selection(X, y, feature_n, method, alpha=0.05, stepwise=True):
                 continue
             score = model_stepwise_forward.pvalues[candidate]
             scores_with_candidates.append((score, candidate))
-        
+
         scores_with_candidates.sort(reverse=True)
         best_new_score, best_candidate = scores_with_candidates.pop()
 
