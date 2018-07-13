@@ -78,6 +78,14 @@ def score_to_risklevel(score, cut_points=None):
     return int(pd.cut([score], bins=cut_points, labels=list(range(10, 0, -1)), include_lowest=True)[0])
 
 
+import re
+def get_phone_reg_time(x):
+    r = []
+    if not pd.isnull(x):
+        r = re.findall(r'使用(\d+)个月', x)
+    return r[0] if len(r) > 0 else np.nan
+
+
 import json
 def extract_nested_json(x):
     """

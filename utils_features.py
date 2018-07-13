@@ -68,6 +68,8 @@ def get_labels(df_meta, col, labels=[0, 1, 3, 7, 14, 30]):
 
     for i in labels:
         df[f'{i}d'] = df[od_col].apply(lambda x: 0 if x <= i else 1)
+    l2 = [f'{i}d' for i in labels]
+    print(df[l2].mean())
     return df
 
 
