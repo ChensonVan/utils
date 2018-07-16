@@ -51,21 +51,12 @@ class BasicModel(object):
     def get_fscore(self):
         if self.model == None:
             raise Exception('Please fit the data by using model before predict') 
-
-        df  = pd.DataFrame(pd.Series(self.model.get_booster().get_fscore())).reset_index(drop=False)
+        try:
+            df = pd.DataFrame(pd.Series(self.model.get_booster().get_fscore())).reset_index(drop=False)
+        except:
+            df = pd.DataFrame(pd.Series(self.model.get_fscore())).reset_index(drop=False)
         df.columns = ['feature_name', 'feature_importance']
         return df.sort_values('feature_importance', ascending=False)
-
-
-    def get_feature_importance(self, columns_name):
-        if self.model == None:
-            raise Exception('Please fit the data by using model before predict') 
-
-        fea_importance = self.model.feature_importances_ 
-        df = pd.DataFrame({'feature_name' : columns_name, 'feature_importance' : fea_importance})
-        df.sort_values(by='feature_importance', ascending=False, inplace=True)
-        df.reset_index(drop=True, inplace=True)
-        return df
 
 
     def find_best_params(self, x, y, param_grid):
@@ -148,6 +139,45 @@ class BasicModel(object):
         stacking_test = np.mean(stacking_test_all_fold, axis=1)
         print(f'Average {np.mean(aucs)}')
         return stacking_train, stacking_test
+
+
+
+    def get_stacking(clf, x, y, x_test, y_test, n_folds=5, random_state=2017):
+        '''
+        Args:
+            clf: 模型
+            x, y: 训练data和label，用于K-folds stacking
+            x_test, y_test: valid数据，非必须，如没有的可直接用x和y
+
+        Returns:
+            oof_train: K-folds stacking出来的K份test数据，最终合并一起
+            oof_test: K-folds stacking出来K份预测结果的均值
+        '''
+        """ K-fold stacking """
+
+        from sklearn.model_selection import KFold
+        cols = x.columns.tolist()
+        x, y = np.array(x), np.array(y)
+        # x_test, y_test = np.array(x_test), np.array(y_test)
+        num_train, num_test = x.shape[0], x_test.shape[0]
+        oof_train = np.zeros((num_train,)) 
+        oof_test  = np.zeros((num_test, ))
+        oof_test_all_fold = np.zeros((num_test, n_folds))
+
+        KF = KFold(n_splits=n_folds, random_state=random_state)
+        for i, (tra_idx, val_idx) in enumerate(KF.split(x, y=y)):
+            print(f'{i} fold - get_stacking, train {len(tra_idx)}, val {len(val_idx)}\n')
+
+            x_tra, y_tra = x[tra_idx], y[tra_idx]
+            x_val, y_val = x[val_idx], y[val_idx]
+            x_tra = pd.DataFrame(np.array(x_tra), columns=cols)
+            x_val = pd.DataFrame(np.array(x_val), columns=cols)
+
+            self.train(x_tra, y_tra, x_val, x_val)
+            oof_train[val_idx] = self.predict(x_val)
+            oof_test_all_fold[:, i] = self.predict(x_test)
+        oof_test = np.mean(oof_test_all_fold, axis=1)
+        return oof_train, oof_test
 
 
     def cross_validation(self, x, y, x_test, y_test, n_folds=5, random_state=2017):

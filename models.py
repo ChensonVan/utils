@@ -74,6 +74,83 @@ class XGB_Classifier(BasicModel):
                             # base_score = 0.5,
                             ) 
 
+
+#################################################################
+# XGB原始接口
+#################################################################
+class XGB_Classifier2(BasicModel):
+    def __init__(self):
+        """ set parameters """
+        self.model = None
+        self.max_depth = 1                      # 构建树的深度，越大越容易过拟合
+        self.learning_rate = 0.08
+        self.n_estimators = 200
+        self.silent = 0                         # 设置成1则没有运行信息输出，最好是设置为0.是否在运行升级时打印消息。
+        self.objective = 'binary:logistic'
+        self.booster = 'gbtree'
+        self.nthread = 4                        # cpu 线程数 默认最大
+        self.gamma = 0.5                        # 树的叶子节点上作进一步分区所需的最小损失减少,越大越保守，一般0.1、0.2这样子
+        self.min_child_weight = 30               # 这个参数默认是 1，是每个叶子里面 h 的和至少是多少，对正负样本不均衡时的 0-1 分类而言
+                                                # 假设 h 在 0.01 附近，min_child_weight 为 1 意味着叶子节点中最少需要包含 100 个样本。
+                                                # 这个参数非常影响结果，控制叶子节点中二阶导的和的最小值，该参数值越小，越容易 overfitting。
+        self.max_delta_step = 1                 # 最大增量步长，我们允许每个树的权重估计。
+        self.subsample = 0.7                    # 随机采样训练样本 训练实例的子采样比
+        self.colsample_bytree = 0.8             # 生成树时进行的列采样 
+        self.colsample_bylevel = 0.8
+        self.reg_alpha = 0.05                   # L1 正则项参数
+        self.reg_lambda = 0.5                   # 控制模型复杂度的权重值的L2正则化项参数，参数越大，模型越不容易过拟合。
+        self.scale_pos_weight = 5               # 如果取值大于0的话，在类别样本不平衡的情况下有助于快速收敛。平衡正负权重
+        self.base_score = 0.5
+        self.seed = 0
+        # self.missing = float, optional
+        self.metric = 'auc'
+
+        self.num_rounds = 1000
+        self.early_stopping_rounds = 15
+        self.possible_label = 1
+
+
+    def init_model(self):
+        pass
+
+
+    def train(self, x_train, y_train, x_val, y_val, params=None, is_eval=False, is_verbose=False):
+        dtrain = xgb.DMatrix(x_train, y_train)
+        dval = xgb.DMatrix(x_val, y_val)
+        watchlist = [(dtrain, 'train'), (dval, 'eval')]
+        self.model = xgb.train(params, dtrain, num_rounds, watchlist, early_stopping_rounds=early_stopping_rounds)
+        print('INFO : bset_iteration is', self.model.best_iteration)
+        self.best_iteration = self.model.best_iteration
+
+        y_pred = self.predict(x_val)
+        auc_score = metrics.roc_auc_score(y_val,  y_pred)
+        return auc_score
+
+
+    def predict(self, x_test):
+        """ return the predicted result of test data """
+        if self.model == None:
+            raise Exception('Please fit the data by using model before predict') 
+
+        dtest = xgb.DMatrix(x_test)
+        y_pred = self.model.predict(dtest)
+        return y_pred
+
+
+    def get_stacking(self, x, y, x_test, y_test, n_folds=5, random_state=2017):
+        pass
+
+
+    def cross_validation(self, x, y, x_test, y_test, n_folds=5, random_state=2017):
+        from sklearn.model_selection import KFold, StratifiedKFold
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=random_state)
+        for i, (tra_idx, val_idx) in enumerate(SKF.split(x, y)):
+            print(f'>>> {i} fold, train {len(tra_idx)}, val {len(val_idx)}')
+            x_tra, y_tra = x[tra_idx], y[tra_idx]
+            x_val, y_val = x[val_idx], y[val_idx]
+
+            
+
 '''
 #################################################################
 # LGB
