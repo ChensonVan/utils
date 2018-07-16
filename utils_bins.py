@@ -186,10 +186,10 @@ class WOE:
 
 class Bins(WOE):
     def __init__(self):
-        pass
+        self.RANDOM_STATE = 2018
 
 
-    def get_cut_points_by_tree(self, x, y, criterion='gini', max_depth=3, min_samples_leaf=0.01, max_leaf_nodes=None, random_state=RANDOM_STATE):
+    def get_cut_points_by_tree(self, x, y, criterion='gini', max_depth=3, min_samples_leaf=0.01, max_leaf_nodes=None, random_state=2018):
         '''
         根据决策树选出cut_points
         '''
