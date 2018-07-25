@@ -105,7 +105,7 @@ class BasicModel(object):
     #     return oof_train, oof_test
 
 
-    def get_stacking(clf, x, y, x_test, y_test, n_folds=5, random_state=2017):
+    def get_stacking(self, x, y, x_test, y_test, n_folds=5, random_state=2017):
         '''
         Args:
             clf: 模型
