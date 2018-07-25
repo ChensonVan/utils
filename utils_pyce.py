@@ -2,15 +2,16 @@ from .utils_tools import *
 
 def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_analyse_', 
                      save_result=True, monotonic_bin=True, prof_tree_cut=True, prof_min_p=0.05,
-                     prof_cut_group=10, max_missing_rate=0.95, event=1, prof_threshold_cor=1):
+                     prof_cut_group=10, max_missing_rate=0.95, event=1, prof_threshold_cor=1, 
+                     exec_recoding=False):
     recoding_prefix = 'r_'
-    out_feature_recoding = prefix + "features_recoding.txt"
+    out_feature_recoding = prefix + 'features_recoding.txt'
 
     # output feature profiling to file
-    out_features_profile = prefix + "features_profile.csv"
+    out_features_profile = prefix + 'features_profile.csv'
 
     # output feature statistics to file
-    out_features_statistics = prefix + "features_statistics.csv"
+    out_features_statistics = prefix + 'features_statistics.csv'
 
     df_profile, df_statistics, statement_recoding = pyce.features_prof_recode(
                                                             Xcont=df[num_fea],  # set as pd.DataFrame() if none
@@ -38,13 +39,19 @@ def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_a
     """
 
     if save_result:
-        pyce.write_recoding_txt(statement_recoding, file=out_feature_recoding, encoding="utf-8")
-        df_profile.to_csv(out_features_profile, encoding="gbk", index=False)
-        df_statistics.to_csv(out_features_statistics, encoding="gbk", index=False)
-
-    data_recoded = pyce.exec_recoding(df, recoding_txt=out_feature_recoding, encoding="utf-8")
+        pyce.write_recoding_txt(statement_recoding, file=out_feature_recoding, encoding='utf-8')
+        df_profile.to_csv(out_features_profile, encoding='gbk', index=False)
+        df_statistics.to_csv(out_features_statistics, encoding='gbk', index=False)
     print('INFO : Analyse Finished.')
-    return data_recoded
+    
+    if exec_recoding:
+        data_recoded = pyce.exec_recoding(df, recoding_txt=out_feature_recoding, encoding='utf-8')
+        print('INFO : Exec_Recoding Finished.')
+        return data_recoded
+    else:
+        return df
+    
+    
 
 
 def LR_predict(df, get_feature, woe_encoder, weight_list, fea_list):
