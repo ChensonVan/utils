@@ -136,7 +136,7 @@ class BasicModel(object):
             x_tra = pd.DataFrame(np.array(x_tra), columns=cols)
             x_val = pd.DataFrame(np.array(x_val), columns=cols)
 
-            self.train(x_tra, y_tra, x_val, x_val)
+            self.train(x_tra, y_tra, x_val, y_val)
             oof_train[val_idx] = self.predict(x_val)
             oof_test_all_fold[:, i] = self.predict(x_test)
         oof_test = np.mean(oof_test_all_fold, axis=1)
