@@ -181,7 +181,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax)
     
 
-    cp = [-np.inf] + get_cut_points(y_pred_list[0]) + [np.inf]
+    cp = [-np.inf] + get_cut_points_by_freq(y_pred_list[0]) + [np.inf]
     if ascending:
         lb = list(range(len(cp) - 1, 0, -1))
     else:
@@ -213,13 +213,10 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     plt.savefig(path)
 
 
-    
-def get_cut_points(data, num_of_bins=10):
-    try:
-        cut_points = list(pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=10, retbins=True)[1])[1 : -1]    
-    except:
-        print('Error')
-    return cut_points
+def get_cut_points_by_freq(x, num_of_bins=10):
+    interval = 100 / num_of_bins
+    cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
+    return cp
 
 
 def bins_freq(data, num_of_bins=10, labels=None):
@@ -404,9 +401,12 @@ def sta_groups(y_true, y_pred, cut_points=None, labels=list(range(1, 11))):
     if cut_points:
         df['y_pred_level'] = bins_points(df.y_pred, cut_points=cut_points, labels=labels).astype(int)
         df['y_pred_range'] = bins_points(df.y_pred, cut_points=cut_points).astype(str)
+        # df['y_pred_range'] = pd.cut(df.y_pred, bins=cut_points, labels=labels, include_lowest=True).astype(int)
     else:
         df['y_pred_level'] = bins_freq(df.y_pred, num_of_bins=10, labels=labels).astype(int)
         df['y_pred_range'] = bins_freq(df.y_pred, num_of_bins=10).astype(str)
+        # df['y_pred_range'] = pd.qcut(df.y_pred, q=bins, duplicates='drop')
+        # df['y_pred_range'] = df['y_pred_range'].cat.remove_unused_categories().cat.codes + 1
 
     # 需要改
     tmp = df.groupby(['y_pred_level', 'y_pred_range'])

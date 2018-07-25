@@ -78,36 +78,29 @@ class XGB_Classifier(BasicModel):
 #################################################################
 # XGB原始接口
 #################################################################
+import xgboost as xgb
 class XGB_Classifier2(BasicModel):
     def __init__(self):
         """ set parameters """
         self.model = None
-        self.max_depth = 1                      # 构建树的深度，越大越容易过拟合
-        self.learning_rate = 0.08
-        self.n_estimators = 200
-        self.silent = 0                         # 设置成1则没有运行信息输出，最好是设置为0.是否在运行升级时打印消息。
-        self.objective = 'binary:logistic'
-        self.booster = 'gbtree'
-        self.nthread = 4                        # cpu 线程数 默认最大
-        self.gamma = 0.5                        # 树的叶子节点上作进一步分区所需的最小损失减少,越大越保守，一般0.1、0.2这样子
-        self.min_child_weight = 30               # 这个参数默认是 1，是每个叶子里面 h 的和至少是多少，对正负样本不均衡时的 0-1 分类而言
-                                                # 假设 h 在 0.01 附近，min_child_weight 为 1 意味着叶子节点中最少需要包含 100 个样本。
-                                                # 这个参数非常影响结果，控制叶子节点中二阶导的和的最小值，该参数值越小，越容易 overfitting。
-        self.max_delta_step = 1                 # 最大增量步长，我们允许每个树的权重估计。
-        self.subsample = 0.7                    # 随机采样训练样本 训练实例的子采样比
-        self.colsample_bytree = 0.8             # 生成树时进行的列采样 
-        self.colsample_bylevel = 0.8
-        self.reg_alpha = 0.05                   # L1 正则项参数
-        self.reg_lambda = 0.5                   # 控制模型复杂度的权重值的L2正则化项参数，参数越大，模型越不容易过拟合。
-        self.scale_pos_weight = 5               # 如果取值大于0的话，在类别样本不平衡的情况下有助于快速收敛。平衡正负权重
-        self.base_score = 0.5
         self.seed = 0
-        # self.missing = float, optional
-        self.metric = 'auc'
-
-        self.num_rounds = 1000
-        self.early_stopping_rounds = 15
-        self.possible_label = 1
+        self.num_rounds = 500
+        self.params = {
+                        'booster'       : 'gbtree',
+                        'objective'     : 'binary:logistic',    # 多分类的问题
+                        'num_class'     : 2,                    # 类别数，与 multisoftmax 并用
+                        'gamma'         : 0.1,                  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
+                        'max_depth'     : 6,                    # 构建树的深度，越大越容易过拟合
+                        'lambda'        : 20,                   # 控制模型复杂度的权重值的L2正则化项参数，参数越大，模型越不容易过拟合。
+                        'subsample'     : 0.7,                  # 随机采样训练样本
+                        'colsample_bytree': 0.7,                # 生成树时进行的列采样
+                        'scale_pos_weight': 1,
+                        'silent'        : 1,                    # 设置成1则没有运行信息输出，最好是设置为0.
+                        'eta'           : 0.01,                 # 如同学习率
+                        'seed'          : 1000,
+                        'nthread'       : 2,                    # cpu 线程数
+                        'eval_metric'   : 'auc'
+                    }
 
 
     def init_model(self):
@@ -118,7 +111,7 @@ class XGB_Classifier2(BasicModel):
         dtrain = xgb.DMatrix(x_train, y_train)
         dval = xgb.DMatrix(x_val, y_val)
         watchlist = [(dtrain, 'train'), (dval, 'eval')]
-        self.model = xgb.train(params, dtrain, num_rounds, watchlist, early_stopping_rounds=early_stopping_rounds)
+        self.model = xgb.train(params, dtrain, self.num_rounds, watchlist, early_stopping_rounds=self.early_stopping_rounds)
         print('INFO : bset_iteration is', self.model.best_iteration)
         self.best_iteration = self.model.best_iteration
 

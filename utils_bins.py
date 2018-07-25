@@ -1,8 +1,31 @@
 import pandas as pd
 import numpy as np
 import re, math, hashlib, json
+from sklearn.utils.multiclass import type_of_target
+
+# import packages
+import pandas as pd
+import numpy as np
+from sklearn import tree
+from sklearn.linear_model.logistic import LogisticRegression
+from sklearn.linear_model  import LinearRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_selection import f_regression
+import math
+from scipy import stats
+from sklearn.utils.multiclass import type_of_target
+
+# import Orange
+import random
+from math import *
+import statsmodels.api as sm
+import statsmodels.stats.api as sms
+import statsmodels.formula.api as smf
+
+import traceback
 
 # from utils_woe import WOE
+# import utils.utils_model_monitor as umm
 
 class WOE:
     def __init__(self):
@@ -183,10 +206,11 @@ class WOE:
 
 
 
-
 class Bins(WOE):
     def __init__(self):
         self.RANDOM_STATE = 2018
+        self._WOE_MIN = -20
+        self._WOE_MAX = 20
 
 
     def get_cut_points_by_tree(self, x, y, criterion='gini', max_depth=3, min_samples_leaf=0.01, max_leaf_nodes=None, random_state=2018):
@@ -215,7 +239,7 @@ class Bins(WOE):
         return sorted(th[np.where(fea != -2)])
 
 
-    def get_cut_point_by_monotonic(self, x, y, num_of_bins=10):
+    def get_cut_points_by_monotonic(self, x, y, num_of_bins=10):
         x, y = pd.Series(x), pd.Series(y)
         x_notnull = x[pd.notnull(x)]
         y_notnull = y[pd.notnull(x)]
@@ -239,16 +263,16 @@ class Bins(WOE):
         return d2['x'].min().tolist()[:1] + d2['x'].max().tolist()
 
 
-    def get_cut_point_by_freq(self, x, num_of_bins=10):
+    def get_cut_points_by_freq(self, x, num_of_bins=10):
         interval = 100 / num_of_bins
         cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
         return cp
 
 
-    def get_cut_point_by_interval(self, x, num_of_bins=10):
+    def get_cut_points_by_interval(self, x, num_of_bins=10):
         cp = pd.cut(x, num_of_bins, retbins=True)[1]
         return cp.tolist()
-    
+
 
     def bins(self, x, y=None, method='tree', num_of_bins=10, cut_points=None):
         if cut_points == None:
@@ -256,13 +280,13 @@ class Bins(WOE):
                 cut_points = self.get_cut_points_by_tree(x, y)
                 
             elif method == 'monotonic':
-                cut_points = self.get_cut_point_by_monotonic(x, y, num_of_bins=num_of_bins)
+                cut_points = self.get_cut_points_by_monotonic(x, y, num_of_bins=num_of_bins)
 
             elif method == 'freq':
-                cut_points = self.get_cut_point_by_freq(x, num_of_bins=num_of_bins)
+                cut_points = self.get_cut_points_by_freq(x, num_of_bins=num_of_bins)
 
             elif method == 'interval':
-                cut_points = self.get_cut_point_by_interval(x, num_of_bins=num_of_bins)
+                cut_points = self.get_cut_points_by_interval(x, num_of_bins=num_of_bins)
 
             else:
                 raise Exception('INFO : method must be in (tree, freq, interval).')
@@ -313,3 +337,38 @@ class Bins(WOE):
         tmp = pd.concat([df_describe_total, df_describe], axis=0)
         return tmp[['var_name', 'WOE', 'IV', 'bucket', 'min_x', 'max_x', 'sum_y', 'count_y', 'mean_y']]
     
+    
+    def get_iv(self, x, y):
+        from pandas.api.types import is_numeric_dtype
+        x_notnull = x[x.notnull()]
+        y_notnull = y[x.notnull()]
+ 
+        try:
+            if is_numeric_dtype(x):  
+                cut_points = self.get_cut_points_by_tree(x_notnull, y_notnull)
+                if not cut_points:
+                    cut_points = self.get_cut_points_by_freq(x_notnull)
+                    
+                if len(cut_points) == 1:
+                    cut_points = [-np.inf] + cut_points + [np.inf]
+                df = pd.DataFrame({'x': x, 
+                                   'y': y, 
+                                   'bucket': pd.cut(x, cut_points, include_lowest=True)})
+                WOE_dic, IV = self.woe_single_x(df.bucket, df.y, event=1)
+                return WOE_dic, IV
+            else:
+                df = pd.DataFrame({'x' : x,
+                                   'y' : y,
+                                   'bucket' : x})
+                WOE_dic_raw, IV_raw = self.woe_single_x(df.bucket, df.y, event=1)
+                return WOE_dic_raw, IV_raw
+                # df['woe'] = df.bucket.map(lambda x : WOE_dic_raw.get(x, -999))
+                # cut_points = self.get_cut_points_by_tree(df['woe'], df['y'])
+                # df['woe_bucket'] = pd.cut(df['woe'], cut_points, include_lowest=True)
+                # WOE_dic, IV = self.woe_single_x(df['woe_bucket'], df['y'], event=1)
+                # return WOE_dic, IV
+        except:
+            # print(traceback.format_exc())
+            print('__ERROR__')
+            return np.nan, np.nan
+            

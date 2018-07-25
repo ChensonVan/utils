@@ -1,7 +1,8 @@
 from .utils_tools import *
 
 def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_analyse_', 
-                     save_result=True, monotonic_bin=True, prof_tree_cut=True, prof_min_p=0.05):
+                     save_result=True, monotonic_bin=True, prof_tree_cut=True, prof_min_p=0.05,
+                     prof_cut_group=10, max_missing_rate=0.95, event=1, prof_threshold_cor=1):
     recoding_prefix = 'r_'
     out_feature_recoding = prefix + "features_recoding.txt"
 
@@ -15,16 +16,16 @@ def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_a
                                                             Xcont=df[num_fea],  # set as pd.DataFrame() if none
                                                             Xnomi=df[fea_str],  # set as pd.DataFrame() if none
                                                             Y=df[target],       # Y will be cut by median if non-binary target
-                                                            event=1, 
-                                                            max_missing_rate=0.95,
+                                                            event=event, 
+                                                            max_missing_rate=max_missing_rate,
                                                             recoding_std=False,
                                                             recoding_woe=True,
                                                             recoding_prefix=recoding_prefix,
-                                                            prof_cut_group=10,
+                                                            prof_cut_group=prof_cut_group,
                                                             monotonic_bin=monotonic_bin,
                                                             prof_tree_cut=prof_tree_cut,
                                                             prof_min_p=prof_min_p,
-                                                            prof_threshold_cor=1,
+                                                            prof_threshold_cor=prof_threshold_cor,
                                                             class_balance=True)
 
     """
@@ -38,8 +39,8 @@ def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_a
 
     if save_result:
         pyce.write_recoding_txt(statement_recoding, file=out_feature_recoding, encoding="utf-8")
-        df_profile.to_csv(out_features_profile, encoding="gb2312", index=False)
-        df_statistics.to_csv(out_features_statistics, encoding="gb2312", index=False)
+        df_profile.to_csv(out_features_profile, encoding="gbk", index=False)
+        df_statistics.to_csv(out_features_statistics, encoding="gbk", index=False)
 
     data_recoded = pyce.exec_recoding(df, recoding_txt=out_feature_recoding, encoding="utf-8")
     print('INFO : Analyse Finished.')

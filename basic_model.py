@@ -105,43 +105,6 @@ class BasicModel(object):
     #     return oof_train, oof_test
 
 
-    def get_stacking(self, x, y, x_test, y_test, n_folds=5, random_state=2017):
-        '''
-        Args:
-            clf: 模型
-            x, y: 训练data和label，用于K-folds stacking
-            x_test, y_test: valid数据，非必须，如没有的可直接用x和y
-
-        Returns:
-            stacking_train: K-folds stacking出来的K份test数据，最终合并一起
-            stacking_test: K-folds stacking出来K份预测结果的均值
-        '''
-        """ K-fold stacking """
-
-        from sklearn.model_selection import KFold
-        x, y = np.array(x), np.array(y)
-        x_test, y_test = np.array(x_test), np.array(y_test)
-        num_train, num_test = x.shape[0], x_test.shape[0]
-        stacking_train = np.zeros((num_train,)) 
-        stacking_test  = np.zeros((num_test, ))
-        stacking_test_all_fold = np.zeros((num_test, n_folds))
-
-        KF = KFold(n_splits=n_folds, random_state=random_state)
-        for i, (tra_idx, val_idx) in enumerate(KF.split(x, y=y)):
-            print(f'{i} fold - get_stacking, train {len(tra_idx)}, val {len(val_idx)}\n')
-            
-            x_tra, y_tra = x[tra_idx], y[tra_idx]
-            x_val, y_val = x[val_idx], y[val_idx]
-
-            clf.fit(x_tra, y_tra)
-            stacking_train[val_idx] = self.predict_proba(x_val)[:, 1]
-            stacking_test_all_fold[:, i] = self.predict_proba(x_test)[:, 1]
-        stacking_test = np.mean(stacking_test_all_fold, axis=1)
-        print(f'Average {np.mean(aucs)}')
-        return stacking_train, stacking_test
-
-
-
     def get_stacking(clf, x, y, x_test, y_test, n_folds=5, random_state=2017):
         '''
         Args:

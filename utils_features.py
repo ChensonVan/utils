@@ -45,6 +45,7 @@ def sta_od_rate(df, targets=[0, 1, 3, 7, 14, 30]):
         od.loc['ALL', f'{i}d'] = 1 - df[f'{i}d'].value_counts(normalize=True)[0]
     return np.round(od, 3)
 
+
 def sta_cov_rate(df):
     '''
     测试集中各个指标的覆盖率
@@ -52,6 +53,7 @@ def sta_cov_rate(df):
     cr = pd.DataFrame(1 - (df.isnull().sum() / len(df)), columns=['covRate']).T
     cr['ALL'] = len(df.dropna(how='any')) / len(df)
     return np.round(cr, 3)
+
 
 def get_labels(df_meta, col, labels=[0, 1, 3, 7, 14, 30]):
     import datetime

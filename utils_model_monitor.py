@@ -124,7 +124,7 @@ class ModelMonitor(Bins):
             fig, axs = plt.subplots(num_cols, num_cat, figsize=(8 * num_cat, 6 * num_cols))
             for i, col in enumerate(cols):
                 x = df_dic[base_key][col].dropna()
-                cp = self.get_cut_point_by_freq(x)
+                cp = self.get_cut_points_by_freq(x)
                 list_tmp = []
                 for j, key in enumerate(df_dic.keys()):
                     df_tmp = df_dic[key]
@@ -165,7 +165,7 @@ class ModelMonitor(Bins):
             x = df_dic[base_key][0][col].dropna()
             if is_numeric_dtype(x):
                 # numeric values
-                cp = self.get_cut_point_by_freq(x)
+                cp = self.get_cut_points_by_freq(x)
                 list_tmp = []
                 for j, key in enumerate(df_dic.keys()):
                     x, y = df_dic[key]

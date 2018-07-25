@@ -38,6 +38,15 @@ def json_to_df(x):
     return x.replace('', np.nan).convert_objects(convert_numeric=True)
 
 
+def get_types(df, fea_out=None):
+    from pandas.api.types import is_numeric_dtype
+    fea_num = df.dtypes[df.dtypes.apply(is_numeric_dtype)].index.tolist()
+    fea_str = df.dtypes[~df.dtypes.apply(is_numeric_dtype)].index.tolist()
+    if fea_out:
+        fea_num = [fea for fea in fea_num if fea not in fea_out]
+        fea_str = [fea for fea in fea_str if fea not in fea_out]
+    return fea_num, fea_str
+
 
 def prob_to_score(p, A=423.82, B=72.14):
     """
@@ -118,3 +127,21 @@ def extract_nested_json(x):
     except:
         global_dic['_ERROR_'] = 1
     return json.dumps(global_dic)
+
+
+
+def stat_data(df_meta, col, target='14d'):
+    df = df_meta.copy()
+    df['c'] = 1
+    tmp0 = pd.DataFrame(df.groupby(col)[target].mean()).reset_index(drop=False)
+    tmp0.columns = [col, '违约率']
+    tmp1 = pd.DataFrame(df.groupby(col)[target].sum()).reset_index(drop=False)
+    tmp1.columns = [col, '违约样本量']
+    tmp2 = pd.DataFrame(df.groupby(col)['c'].sum()).reset_index(drop=False)
+    tmp2.columns = [col, '样本量']
+    
+    tmp = pd.merge(tmp2, tmp1, on=col)
+    tmp['非违约样本量'] = tmp['样本量'] - tmp['违约样本量']
+    tmp = pd.merge(tmp, tmp0, on=col)
+    return tmp
+
