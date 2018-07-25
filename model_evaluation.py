@@ -42,6 +42,7 @@ def cal_metrics(y_true, y_pred, thr_point=None, precision=3):
         
     return ks, ac, pr, rc, fpr, tpr, thr_point
 
+
 def plot_ks(y_true, y_pred, text='', ax=None):
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
@@ -105,7 +106,8 @@ def plot_ks_2(y_true, y_pred, text='', ax=None):
     ax.legend(loc='best')
     
      
-  
+        
+        
 def plot_lift(y_true, y_pred, text='', n_cut=100, ax=None):
     import matplotlib.pyplot as plt
     
@@ -146,7 +148,6 @@ def plot_lift(y_true, y_pred, text='', n_cut=100, ax=None):
     return ax
 
 
-
 def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False):
     """
     Args:
@@ -172,7 +173,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     plot_auc(y_true_list, y_pred_list, label_list, ax=sub_ax)
     
 
-    cp = [-np.inf] + get_cut_points_by_freq(y_pred_list[0]) + [np.inf]
+    cp = [-np.inf] + get_cut_points_by_freq(y_pred_list[0])[1:-1] + [np.inf]
     if ascending:
         lb = list(range(len(cp) - 1, 0, -1))
     else:
@@ -358,6 +359,8 @@ def plot_pr(y_true, y_pred, text='', pos_label=1, ax=None):
     ax.set_ylabel('Precision Rate')
     ax.set_title(f'{text} P-R curve')
     ax.legend(loc='best')
+    
+    
     
     
 def plot_auc(y_true_list, y_pred_list, label_list, precision=3, ax=None):

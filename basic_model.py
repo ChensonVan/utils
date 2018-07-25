@@ -78,33 +78,6 @@ class BasicModel(object):
         return gsearch.best_estimator_
 
 
-    # def get_oof(self, x, y, x_test, y_test, n_folds=5, random_state=2017):
-    #     """ K-fold stacking """
-    #     x, y = np.array(x), np.array(y)
-    #     x_test, y_test = np.array(x_test), np.array(y_test)
-    #     num_train, num_test = x.shape[0], x_test.shape[0]
-    #     oof_train = np.zeros((num_train,)) 
-    #     oof_test  = np.zeros((num_test, ))
-    #     oof_test_all_fold = np.zeros((num_test, n_folds))
-    #     aucs = []
-
-    #     KF = KFold(n_splits=n_folds, random_state=random_state)
-    #     for i, (tra_idx, val_idx) in enumerate(KF.split(x)):
-    #         print(f'{i} fold - get_oof, train {len(tra_idx)}, val {len(val_idx)}\n')
-            
-    #         x_tra, y_tra = x[tra_idx], y[tra_idx]
-    #         x_val, y_val = x[val_idx], y[val_idx]
-
-    #         ac = self.train(x_tra, y_tra, x_val, y_val, is_eval=False)
-    #         aucs.append(ac)
-
-    #         oof_train[val_idx] = self.predict(x_val)
-    #         oof_test_all_fold[:, i] = self.predict(x_test)
-    #     oof_test = np.mean(oof_test_all_fold, axis=1)
-    #     print(f'Average {np.mean(aucs)}')
-    #     return oof_train, oof_test
-
-
     def get_stacking(self, x, y, x_test, y_test, n_folds=5, random_state=2017):
         '''
         Args:
