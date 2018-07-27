@@ -56,7 +56,9 @@ class BasicModel(object):
         except:
             df = pd.DataFrame(pd.Series(self.model.get_fscore())).reset_index(drop=False)
         df.columns = ['feature_name', 'feature_importance']
-        return df.sort_values('feature_importance', ascending=False)
+        df = df.sort_values('feature_importance', ascending=False)
+        df = df.reset_index(drop=True)
+        return df
 
 
     def find_best_params(self, x, y, param_grid):

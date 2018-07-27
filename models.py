@@ -85,6 +85,7 @@ class XGB_Classifier2(BasicModel):
         self.model = None
         self.seed = 0
         self.num_rounds = 500
+        self.early_stopping_rounds = 30
         self.params = {
                         'booster'       : 'gbtree',
                         'objective'     : 'binary:logistic',    # 多分类的问题
