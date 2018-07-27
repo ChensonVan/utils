@@ -1,23 +1,26 @@
 from .utils_tools import *
 
-def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_analyse_', 
+def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_analyse_',
                      save_result=True, monotonic_bin=True, prof_tree_cut=True, prof_min_p=0.05,
-                     prof_cut_group=10, max_missing_rate=0.95, event=1, prof_threshold_cor=1, 
-                     exec_recoding=False):
+                     prof_cut_group=10, max_missing_rate=0.95, event=1, prof_threshold_cor=1,
+                     exec_recoding=False, overwrite_file=False):
     recoding_prefix = 'r_'
     out_feature_recoding = prefix + 'features_recoding.txt'
+    out_features_profile = prefix + 'features_profile.xlsx'
+    out_features_statistics = prefix + 'features_statistics.xlsx'
 
-    # output feature profiling to file
-    out_features_profile = prefix + 'features_profile.csv'
-
-    # output feature statistics to file
-    out_features_statistics = prefix + 'features_statistics.csv'
+    import os
+    if os.path.exists(out_features_profile):
+        print('INFO  : File Exists!')
+        if not overwrite_file:
+            print('INFO  : Not Overwrite Files, Do NOTHING.')
+            return df
 
     df_profile, df_statistics, statement_recoding = pyce.features_prof_recode(
                                                             Xcont=df[num_fea],  # set as pd.DataFrame() if none
                                                             Xnomi=df[fea_str],  # set as pd.DataFrame() if none
                                                             Y=df[target],       # Y will be cut by median if non-binary target
-                                                            event=event, 
+                                                            event=event,
                                                             max_missing_rate=max_missing_rate,
                                                             recoding_std=False,
                                                             recoding_woe=True,
@@ -34,24 +37,24 @@ def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_a
     < 0.02: useless for prediction
     0.02~0.1: Weak predictor
     0.1~ 0.3: Medium predictor
-    0.3~0.5: Strong predictor 
+    0.3~0.5: Strong predictor
     >0.5: Suspicious or too good to be true
     """
 
     if save_result:
         pyce.write_recoding_txt(statement_recoding, file=out_feature_recoding, encoding='utf-8')
-        df_profile.to_csv(out_features_profile, encoding='gbk', index=False)
-        df_statistics.to_csv(out_features_statistics, encoding='gbk', index=False)
+        df_profile.to_excel(out_features_profile, encoding='gbk', index=False)
+        df_statistics.to_excel(out_features_statistics, encoding='gbk', index=False)
     print('INFO : Analyse Finished.')
-    
+
     if exec_recoding:
         data_recoded = pyce.exec_recoding(df, recoding_txt=out_feature_recoding, encoding='utf-8')
         print('INFO : Exec_Recoding Finished.')
         return data_recoded
     else:
         return df
-    
-    
+
+
 
 
 def LR_predict(df, get_feature, woe_encoder, weight_list, fea_list):
@@ -68,15 +71,15 @@ def LR_fit(pyce, X, y, prefix='', fea_selection=True, save_result=False, num_var
     X['intercept'] = 1
 
     if fea_selection:
-        statmodel_significant_vars = pyce.feature_selection_logistic(y, X, feature_n=num_var_final, 
-                                                                     alpha=statmodel_significant_level, 
+        statmodel_significant_vars = pyce.feature_selection_logistic(y, X, feature_n=num_var_final,
+                                                                     alpha=statmodel_significant_level,
                                                                      stepwise=stepwise)
         indep_var_final = statmodel_significant_vars
     else:
         indep_var_final = X.columns.tolist()
-    
+
     import statsmodels.api as sm
-    model_desc = sm.Logit(y, X[indep_var_final])  
+    model_desc = sm.Logit(y, X[indep_var_final])
     model_final = model_desc.fit(disp=False)
 
     model_summary = model_final.summary2(alpha=0.05)
