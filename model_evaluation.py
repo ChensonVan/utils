@@ -105,47 +105,33 @@ def plot_ks_2(y_true, y_pred, text='', ax=None):
     ax.set_title(f'{text} K-S curve')
     ax.legend(loc='best')
     
-     
         
         
-def plot_lift(y_true, y_pred, text='', n_cut=100, ax=None):
-    import matplotlib.pyplot as plt
-    
+def plot_lift(y_true, y_pred, text='', num_of_bins=20, ax=None):
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     
-    y_true = pd.Series(y_true)
-    y_pred = pd.Series(y_pred)
+    cut_points = [-np.inf] + me.get_cut_points_by_freq(-y_pred_train, num_of_bins=100)[1: -1] + [np.inf]
+    df_bin = me.bins_points(-y_pred, cut_points, labels=list(range(1, len(cut_points))))
+    df_tmp = pd.DataFrame({'y_true': list(y_true), 'y_pred': list(y_pred), 'level': list(df_bin)})
+    df_tmp['acc_count'] = 1
 
-    qcut, ret = pd.qcut(-y_pred, q=n_cut, duplicates='drop', retbins=True)
-    ncut = len(qcut.cat.categories)
-    qcut_cat = qcut.cat.categories
+    acc_count = df_tmp.groupby('level')[['acc_count', 'y_true']].sum().cumsum()
+    acc_count['acc_mean'] = acc_count['y_true'] / acc_count['acc_count']
+    acc_count['lift'] = acc_count['acc_mean'] / np.mean(y_true)
 
-    qcut_x = np.arange(1 / ncut, 1 + 1 / ncut, 1 / ncut)[:ncut]
-    dic = dict(zip([str(i) for i in qcut_cat], qcut_x))
-
-    qcut = qcut.astype(str).map(dic)
-    overall_resp = np.mean(y_true)
-    sample_size = [1 for i in range(len(y_true))]
-    qcut_cumresp = pd.DataFrame({'response': y_true}).groupby(qcut).agg(sum).sort_index().cumsum()
-    qcut_cumsamp = pd.DataFrame({'count': sample_size}, index=y_true.index).groupby(qcut).agg(sum).sort_index().cumsum()
-    lift = qcut_cumsamp.join(qcut_cumresp)
-    lift['lift'] = lift['response'] / (lift['count'] * overall_resp)
-
-    ax.plot(qcut_x, lift.lift, label='Lift Curve')
+    ax.plot(acc_count.index.tolist(), acc_count['lift'].tolist(), lw=2, label=text)
     for i in [1, 5, 10]:
         try:
-            cut_x = i * (1 / ncut)
-            cut_y = lift.iloc[i - 1, 2]
-            ax.plot([cut_x], [cut_y], 'o', label='Top ' + str(int((100 * cut_x))) + 'pct Lift: %0.1f' % cut_y)
+            cut_x = int(i * (1 / num_of_bins) * 100)
+            cut_y = acc_count.iloc[cut_x - 1]['lift']  
+            ax.plot([cut_x], [cut_y], 'o', label=f'Top {cut_x} pct Lift:{np.round(cut_y, 1)}')
         except:
             pass
-
     ax.set_xlabel('Proportion')
     ax.set_ylabel('Lift')
     ax.set_title(f'{text} Lift Curve')
-    ax.legend(loc="best")
-    return ax
+    ax.legend(loc='best')
 
 
 def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False):
