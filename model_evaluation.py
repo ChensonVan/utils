@@ -98,33 +98,32 @@ def plot_ks_2(y_true, y_pred, text='', ax=None):
     # plt.figure(figsize = (8, 6), dpi=100) 
     ax.plot(x, tpr, lw=2, label='TPR')
     ax.plot(x, fpr, lw=2, label='FPR')    
-    ax.plot([cut_x,cut_x], [cut_tpr,cut_fpr], color='firebrick', ls='--')  
+    ax.plot([cut_x, cut_x], [cut_tpr, cut_fpr], color='firebrick', ls='--')  
     ax.text(0.45, 0.3, 'KS = %0.2f' % ks)       
     ax.set_xlabel('Proportion')
     ax.set_ylabel('Rate')
     ax.set_title(f'{text} K-S curve')
     ax.legend(loc='best')
     
-        
-        
-def plot_lift(y_true, y_pred, text='', num_of_bins=20, ax=None):
+           
+def plot_lift(y_true, y_pred, text='', num_of_bins=100, ax=None):
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     
-    cut_points = [-np.inf] + me.get_cut_points_by_freq(-y_pred_train, num_of_bins=100)[1: -1] + [np.inf]
-    df_bin = me.bins_points(-y_pred, cut_points, labels=list(range(1, len(cut_points))))
-    df_tmp = pd.DataFrame({'y_true': list(y_true), 'y_pred': list(y_pred), 'level': list(df_bin)})
-    df_tmp['acc_count'] = 1
+    cut_points = [-np.inf] + get_cut_points_by_freq(-y_pred, num_of_bins=num_of_bins)[1: -1] + [np.inf]
+    df_bin = bins_points(-y_pred, cut_points, labels=list(range(1, len(cut_points))))
+    df = pd.DataFrame({'y_true': list(y_true), 'y_pred': list(y_pred), 'level': list(df_bin)})
+    df['acc_count'] = 1
 
-    acc_count = df_tmp.groupby('level')[['acc_count', 'y_true']].sum().cumsum()
-    acc_count['acc_mean'] = acc_count['y_true'] / acc_count['acc_count']
-    acc_count['lift'] = acc_count['acc_mean'] / np.mean(y_true)
+    df_lift = df.groupby('level')[['acc_count', 'y_true']].sum().cumsum()
+    df_lift['acc_mean'] = df_lift['y_true'] / df_lift['acc_count']
+    df_lift['lift'] = df_lift['acc_mean'] / np.mean(y_true)
 
-    ax.plot(acc_count.index.tolist(), acc_count['lift'].tolist(), lw=2, label=text)
+    ax.plot(df_lift.index.tolist(), df_lift['lift'].tolist(), lw=2, label=text)
     for i in [1, 5, 10]:
         try:
             cut_x = int(i * (1 / num_of_bins) * 100)
-            cut_y = acc_count.iloc[cut_x - 1]['lift']  
+            cut_y = df_lift.iloc[cut_x - 1]['lift']  
             ax.plot([cut_x], [cut_y], 'o', label=f'Top {cut_x} pct Lift:{np.round(cut_y, 1)}')
         except:
             pass
@@ -146,9 +145,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     Exampel:
         plot_evaluation({'YF_v2 + App (train)': [y_train, y_pred_all_train], 'YF_v2 + App (test)': [y_test, y_pred_all]})
     """
-    num_col = len(df_dic) 
-    num_row = 5           
-    
+    num_col, num_row = len(df_dic), 5
     fig, axs = plt.subplots(num_row, num_col, figsize=(8 * num_col, 6 * num_row), dpi=100)
     
     label_list = list(df_dic.keys())
@@ -169,7 +166,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
         cp = None
 
     for i, label in enumerate(df_dic.keys()):
-        y_true, y_pred = df_dic[label][0], df_dic[label][1]
+        y_true, y_pred = list(df_dic[label][0]), list(df_dic[label][1])
         
         # plot-ks
         sub_ax = axs[1][i] if num_col > 1 else axs[1]
@@ -178,8 +175,8 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
         up1, up2 = df_bins['single_overdue_rate'].max() * 120, df_bins['count'].max() * 1.4
         
         # plot-lift
-        sub_ax = axs[2][i] if num_col > 1 else axs[2]
-        plot_lift(y_true, y_pred, label, ax=sub_ax)
+        # sub_ax = axs[2][i] if num_col > 1 else axs[2]
+        # plot_lift(y_true, y_pred, label, ax=sub_ax)
         
         # sorting-ability
         sub_ax = axs[3][i] if num_col > 1 else axs[3]
@@ -194,7 +191,8 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
 def get_cut_points_by_freq(x, num_of_bins=10):
     interval = 100 / num_of_bins
     cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
-    return cp
+    # print('>>>> ', cp)
+    return list(cp)
 
 
 def bins_freq(data, num_of_bins=10, labels=None):
@@ -248,13 +246,19 @@ def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=F
     ax2.bar(plt_x, plt_y, width, alpha=0.5)
 
     # 折线图
+    # 单箱逾期率
     plt_y = round(df.single_overdue_rate, 3) * 100
     ax.plot(plt_x, plt_y, linestyle='--', lw=lw, 
              label='overdue rate', marker='o')
+    for i, (a, b) in enumerate(zip(plt_x, plt_y)):
+        ax.text(a, b + 2, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8) 
 
+    # 累计逾期率
     plt_y = round(df.acc_overdue_rate, 3) * 100
     ax.plot(plt_x, plt_y, linestyle='--', lw=lw, 
              label='accumulate overdue rate', marker='o')
+    for i, (a, b) in enumerate(zip(plt_x, plt_y)):
+        ax.text(a, b + 1, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8)
 
     if is_asce:
         ax.set_xlabel('Groups(Bad -> Good)')

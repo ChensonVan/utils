@@ -19,7 +19,7 @@ def filter_numbers(n):
         return m.groups()[1]
     else:
         return n[:-2] if n.endswith('.0') else n
-    
+
 
 def format_json(x, null_content):
     if pd.isnull(x):
@@ -29,7 +29,7 @@ def format_json(x, null_content):
         x = json.loads(x)
         for k, v in x.items():
             x[k] = json.dumps(v)
-        return json.dumps(x)  
+        return json.dumps(x)
 
 
 def json_to_df(x):
@@ -98,10 +98,10 @@ def get_phone_reg_time(x):
 import json
 def extract_nested_json(x):
     """
-    args: 
+    args:
         x: json-formated data
     return:
-        anti-nested formated data 将多层嵌套的json提取出只有一层的json，返回数据也是json类型   
+        anti-nested formated data 将多层嵌套的json提取出只有一层的json，返回数据也是json类型
     example:
         df.data.map(extract_nested_json).apply(lambda s:pd.Series(json.loads(s)))
     """
@@ -139,9 +139,43 @@ def stat_data(df_meta, col, target='14d'):
     tmp1.columns = [col, '违约样本量']
     tmp2 = pd.DataFrame(df.groupby(col)['c'].sum()).reset_index(drop=False)
     tmp2.columns = [col, '样本量']
-    
+
     tmp = pd.merge(tmp2, tmp1, on=col)
     tmp['非违约样本量'] = tmp['样本量'] - tmp['违约样本量']
     tmp = pd.merge(tmp, tmp0, on=col)
     return tmp
 
+
+def sample(df, overduerate=0.17, target='14d', random_state=2017):
+    """
+    Args:
+        df:
+        overduerate:
+        target:
+        random_state:
+
+    Return:
+        df
+    """
+    overduerate1 = df[target].mean()
+
+    if overduerate > overduerate1:
+        # 逾期率升高, 保留坏用户, 去掉一些好用户
+        df_good = df[df[target] == 0]
+        df_bad = df[df[target] == 1]
+        n_bad = df_bad.shape[0]
+        n_good = int(((1 - overduerate) / overduerate) * n_bad)
+        df_good = df_good.sample(n=n_good, random_state=random_state)
+        df2 = pd.concat([df_good, df_bad])
+
+    elif overduerate < overduerate1:
+        # 逾期率降低, 保留好用户, 去掉一些坏用户
+        df_good = df[df[target] == 0]
+        df_bad = df[df[target] == 1]
+        n_good = df_good.shape[0]
+        n_bad = int((overduerate / (1 - overduerate)) * n_good)
+        df_bad = df_bad.sample(n=n_bad, random_state=random_state)
+        df2 = pd.concat([df_good, df_bad], axis=0)
+    else:
+        return df
+    return df2

@@ -159,28 +159,32 @@ class ModelMonitor(Bins):
         ax.set_title(title)
 
 
-    def plot_values_with_label(self, df_dic, cols, path='vals_with_label.png'):
+    # model_monitor.plot_values_with_label??
+    def plot_values_with_label(self, df_dic, cols, isolate=False, path='vals_with_label.png', n_dis=10):
         from pandas.api.types import is_numeric_dtype
         num_cols, num_dics = len(cols), len(df_dic.keys())
         fig, axs = plt.subplots(num_cols, num_dics, figsize=(8 * num_dics, 6 * num_cols))
         base_key = list(df_dic.keys())[0]
         for i, col in enumerate(cols):
             x = df_dic[base_key][0][col].dropna()
-            if is_numeric_dtype(x) and len(set(x)) >= 10:
+            if is_numeric_dtype(x) and len(set(x)) >= n_dis:
                 # numeric values
-                cp = self.get_cut_points_by_freq(x)
+                if not isolate:
+                    cp = self.get_cut_points_by_freq(x)
                 list_tmp = []
                 for j, key in enumerate(df_dic.keys()):
                     x, y = df_dic[key]
                     y = y[x[col].notnull()]
                     x = x[x[col].notnull()][col]
+                    if isolate:
+                        cp = self.get_cut_points_by_freq(x)
                     df_bin = self.bins(x, y, cut_points=cp).reset_index(drop=False)   
                     if num_dics == 1 and num_cols == 1:
                         sub_ax = axs
-                    elif num_dics > 1:
+                    elif num_dics > 1 and num_cols > 1:
                         sub_ax = axs[i][j]
                     else:
-                        sub_ax = axs[i]
+                        sub_ax = axs[j]
                     self.plot_single_value_with_label(df_bin, col + '_' + key, ax=sub_ax)
                 plt.tight_layout()
 
@@ -194,10 +198,10 @@ class ModelMonitor(Bins):
                     df_bin = pd.DataFrame({'bucket' : x, 'y' : y})
                     if num_dics == 1 and num_cols == 1:
                         sub_ax = axs
-                    elif num_dics > 1:
+                    elif num_dics > 1 and num_cols > 1:
                         sub_ax = axs[i][j]
                     else:
-                        sub_ax = axs[i]
+                        sub_ax = axs[j]
                     self.plot_single_value_with_label(df_bin, col + '_' + key, ax=sub_ax)
                     plt.tight_layout()
             plt.savefig(path)
