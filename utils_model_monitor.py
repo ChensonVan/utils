@@ -166,6 +166,7 @@ class ModelMonitor(Bins):
         fig, axs = plt.subplots(num_cols, num_dics, figsize=(8 * num_dics, 6 * num_cols))
         base_key = list(df_dic.keys())[0]
         for i, col in enumerate(cols):
+            print('>>> col:', col)
             x = df_dic[base_key][0][col].dropna()
             if is_numeric_dtype(x) and len(set(x)) >= n_dis:
                 # numeric values

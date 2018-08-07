@@ -106,6 +106,7 @@ def extract_nested_json(x):
         df.data.map(extract_nested_json).apply(lambda s:pd.Series(json.loads(s)))
     """
     global_dic = {}
+    x = x.replace('\\\\', '\\')
     def json_to_dict(key, value, prefix=''):
         if isinstance(value, dict):
             for k, v in value.items():
@@ -121,8 +122,8 @@ def extract_nested_json(x):
             if prefix:
                 key = prefix + '_' + key
             global_dic[key] = value
-    tmp = json.loads(x)
     try:
+        tmp = json.loads(x)
         json_to_dict('', tmp)
     except:
         global_dic['_ERROR_'] = 1
