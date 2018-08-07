@@ -232,7 +232,7 @@ def bins_points(data, cut_points, labels=None):
     return r
 
 
-def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=False, ax=None):
+def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=False, ax=None, precision=3):
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     ax2 = ax.twinx()                                    # 创建第二个坐标轴（设置 xticks 的时候使用 ax）
