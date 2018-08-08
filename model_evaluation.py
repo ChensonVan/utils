@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl   # mpl.style.available
 mpl.style.use('ggplot')
 
+__ALPHA__ = 0.6
+
 
 def cal_metrics(y_true, y_pred, thr_point=None, precision=3):
     '''
@@ -243,22 +245,22 @@ def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=F
     plt_x_range = df.y_pred_range.tolist()
 
     plt_y = df['count']
-    ax2.bar(plt_x, plt_y, width, alpha=0.5)
+    ax2.bar(plt_x, plt_y, width, alpha=__ALPHA__)
 
     # 折线图
     # 单箱逾期率
     plt_y = round(df.single_overdue_rate, 3) * 100
     ax.plot(plt_x, plt_y, linestyle='--', lw=lw, 
              label='overdue rate', marker='o')
-    for i, (a, b) in enumerate(zip(plt_x, plt_y)):
-        ax.text(a, b + 2, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8) 
+    for i, (a, b) in enumerate(zip(plt_x[1:], plt_y[1:])):
+        ax.text(a, b + 1, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8) 
 
     # 累计逾期率
     plt_y = round(df.acc_overdue_rate, 3) * 100
     ax.plot(plt_x, plt_y, linestyle='--', lw=lw, 
              label='accumulate overdue rate', marker='o')
-    for i, (a, b) in enumerate(zip(plt_x, plt_y)):
-        ax.text(a, b + 1, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8)
+    for i, (a, b) in enumerate(zip(plt_x[1:], plt_y[1:])):
+        ax.text(a + 0.2, b - 4, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8)
 
     if is_asce:
         ax.set_xlabel('Groups(Bad -> Good)')
