@@ -281,6 +281,25 @@ class ModelMonitor(Bins):
 
 
 
+    def get_psi(self, x_actual, x_expected, num_of_bins=10, psi_only=True):
+        from math import log, e
+        cp = self.get_cut_points_by_freq(x_actual)
+        x_bin1 = pd.DataFrame(self.bins(x_actual, cut_points=cp).bucket.value_counts(normalize=True))
+        x_bin1.columns = ['bucket_expected']
+        x_bin2 = pd.DataFrame(self.bins(x_expected, cut_points=cp).bucket.value_counts(normalize=True))
+        x_bin2.columns = ['bucket_actual']
+
+        bin_tmp = x_bin1.join(x_bin2)
+        bin_tmp['prop_diff'] = bin_tmp['bucket_actual'] - bin_tmp['bucket_expected']
+        bin_tmp['prop_ln'] = (bin_tmp['bucket_actual'] / bin_tmp['bucket_expected']).map(lambda x: log(x, e))
+        bin_tmp['psi'] = bin_tmp['prop_diff'] * bin_tmp['prop_ln']
+        if psi_only:
+            return bin_tmp['psi'].sum()
+        else: 
+            return bin_tmp
+
+
+
 
 if __name__ == '__main__':
     val_count = df_oot[fea_in].nunique()
