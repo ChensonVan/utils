@@ -182,10 +182,12 @@ class ModelMonitor(Bins):
                     df_bin = self.bins(x, y, cut_points=cp).reset_index(drop=False)   
                     if num_dics == 1 and num_cols == 1:
                         sub_ax = axs
-                    elif num_dics > 1 and num_cols > 1:
-                        sub_ax = axs[i][j]
-                    else:
+                    elif num_dics > 1 and num_cols == 1:
                         sub_ax = axs[j]
+                    elif num_dics == 1 and num_cols > 1:
+                        sub_ax = axs[i]
+                    else:
+                        sub_ax = axs[i][j]
                     self.plot_single_value_with_label(df_bin, col + '_' + key, ax=sub_ax)
                 plt.tight_layout()
 
@@ -199,10 +201,12 @@ class ModelMonitor(Bins):
                     df_bin = pd.DataFrame({'bucket' : x, 'y' : y})
                     if num_dics == 1 and num_cols == 1:
                         sub_ax = axs
-                    elif num_dics > 1 and num_cols > 1:
-                        sub_ax = axs[i][j]
-                    else:
+                    elif num_dics > 1 and num_cols == 1:
                         sub_ax = axs[j]
+                    elif num_dics == 1 and num_cols > 1:
+                        sub_ax = axs[i]
+                    else:
+                        sub_ax = axs[i][j]
                     self.plot_single_value_with_label(df_bin, col + '_' + key, ax=sub_ax)
                     plt.tight_layout()
             plt.savefig(path)

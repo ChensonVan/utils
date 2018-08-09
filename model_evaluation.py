@@ -21,7 +21,7 @@ import matplotlib as mpl   # mpl.style.available
 mpl.style.use('ggplot')
 
 __ALPHA__ = 0.6
-
+__LW__ = 2
 
 def cal_metrics(y_true, y_pred, thr_point=None, precision=3):
     '''
@@ -65,11 +65,10 @@ def plot_ks(y_true, y_pred, text='', ax=None):
     max_ks = np.max(np.array(pos) - np.array(neg))
     best_thr = thr[np.argmax(np.array(pos) - np.array(neg))]
 
-    lw = 2
-    ax.plot(prob, pos, lw=lw, label='TPR')
-    ax.plot(prob, neg, lw=lw, label='FPR')
-    ax.plot(prob, ks,  lw=lw, label='KS (%0.2f)' % max_ks)
-    # ax.plot([threshold, threshold], [0, 1], lw=lw, linestyle='--',
+    ax.plot(prob, pos, lw=__LW__, label='TPR')
+    ax.plot(prob, neg, lw=__LW__, label='FPR')
+    ax.plot(prob, ks,  lw=__LW__, label='KS (%0.2f)' % max_ks)
+    # ax.plot([threshold, threshold], [0, 1], lw=__LW__, linestyle='--',
     #          label=' best passing rate (%0.0f%%)\n(best threshold = %0.2f)' % (threshold * 100, best_thr))
     ax.set_xlim([-0.03, 1.03])
     ax.set_ylim([-0.03, 1.03])
@@ -111,7 +110,8 @@ def plot_ks_2(y_true, y_pred, text='', ax=None):
 def plot_lift(y_true, y_pred, text='', num_of_bins=100, ax=None):
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
-    
+
+    y_true, y_pred = pd.Series(y_true), pd.Series(y_pred)
     cut_points = [-np.inf] + get_cut_points_by_freq(-y_pred, num_of_bins=num_of_bins)[1: -1] + [np.inf]
     df_bin = bins_points(-y_pred, cut_points, labels=list(range(1, len(cut_points))))
     df = pd.DataFrame({'y_true': list(y_true), 'y_pred': list(y_pred), 'level': list(df_bin)})
@@ -135,7 +135,7 @@ def plot_lift(y_true, y_pred, text='', num_of_bins=100, ax=None):
     ax.legend(loc='best')
 
 
-def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False):
+def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False, is_tick=False):
     """
     Args:
         df_dic:
@@ -147,7 +147,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     Exampel:
         plot_evaluation({'YF_v2 + App (train)': [y_train, y_pred_all_train], 'YF_v2 + App (test)': [y_test, y_pred_all]})
     """
-    num_col, num_row = len(df_dic), 5
+    num_col, num_row = len(df_dic), 4
     fig, axs = plt.subplots(num_row, num_col, figsize=(8 * num_col, 6 * num_row), dpi=100)
     
     label_list = list(df_dic.keys())
@@ -164,8 +164,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
     else:
         lb = list(range(1, len(cp)))
 
-    if isolate:
-        cp = None
+    cp = None if isolate else cp
 
     for i, label in enumerate(df_dic.keys()):
         y_true, y_pred = list(df_dic[label][0]), list(df_dic[label][1])
@@ -177,15 +176,15 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
         up1, up2 = df_bins['single_overdue_rate'].max() * 120, df_bins['count'].max() * 1.4
         
         # plot-lift
-        # sub_ax = axs[2][i] if num_col > 1 else axs[2]
-        # plot_lift(y_true, y_pred, label, ax=sub_ax)
+        sub_ax = axs[2][i] if num_col > 1 else axs[2]
+        plot_lift(y_true, y_pred, label, ax=sub_ax)
         
         # sorting-ability
         sub_ax = axs[3][i] if num_col > 1 else axs[3]
-        sorting_ability(df_bins, upper1=up1, upper2=up2, text=label, ax=sub_ax)
+        sorting_ability(df_bins, upper1=up1, upper2=up2, text=label, ax=sub_ax, is_tick=is_tick)
         
-        sub_ax = axs[4][i] if num_col > 1 else axs[4]
-        plot_acc_od_ps_rc(df_bins, text=label, ax=sub_ax)
+        # sub_ax = axs[4][i] if num_col > 1 else axs[4]
+        # plot_acc_od_ps_rc(df_bins, text=label, ax=sub_ax)
         plt.tight_layout()
     plt.savefig(path)
 
@@ -193,11 +192,10 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
 def get_cut_points_by_freq(x, num_of_bins=10):
     interval = 100 / num_of_bins
     cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
-    # print('>>>> ', cp)
     return list(cp)
 
 
-def bins_freq(data, num_of_bins=10, labels=None):
+def bins_freq(data, num_of_bins=10, labels=None, precision=4):
     '''
     分箱 - 按照相同的频率分箱
     
@@ -208,9 +206,9 @@ def bins_freq(data, num_of_bins=10, labels=None):
     return:  分箱后的label
     '''
     if labels == None:
-        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=10, retbins=True)
+        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=precision, retbins=True)
     else:
-        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=10, retbins=True, labels=labels)
+        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=precision, retbins=True, labels=labels)
     return r[0]
 
 
@@ -235,14 +233,17 @@ def bins_points(data, cut_points, labels=None):
 
 
 def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=False, ax=None, precision=3):
+    from matplotlib.ticker import FuncFormatter 
+    def to_percent(temp, position):  
+        return '%1.0f'% temp + '%' 
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
     ax2 = ax.twinx()                                    # 创建第二个坐标轴（设置 xticks 的时候使用 ax）
-    width, lw = 0.5, 2
+    width = 0.5
 
     # 柱状图
     plt_x = df.y_pred_level.tolist()
-    plt_x_range = df.y_pred_range.tolist()
+    plt_x_range = [r.replace('-', '') for r in df.y_pred_range.tolist()]
 
     plt_y = df['count']
     ax2.bar(plt_x, plt_y, width, alpha=__ALPHA__)
@@ -250,23 +251,24 @@ def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=F
     # 折线图
     # 单箱逾期率
     plt_y = round(df.single_overdue_rate, 3) * 100
-    ax.plot(plt_x, plt_y, linestyle='--', lw=lw, 
+    ax.plot(plt_x, plt_y, linestyle='--', lw=__LW__, 
              label='overdue rate', marker='o')
     for i, (a, b) in enumerate(zip(plt_x[1:], plt_y[1:])):
         ax.text(a, b + 1, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8) 
 
     # 累计逾期率
     plt_y = round(df.acc_overdue_rate, 3) * 100
-    ax.plot(plt_x, plt_y, linestyle='--', lw=lw, 
+    ax.plot(plt_x, plt_y, linestyle='--', lw=__LW__, 
              label='accumulate overdue rate', marker='o')
-    for i, (a, b) in enumerate(zip(plt_x[1:], plt_y[1:])):
-        ax.text(a + 0.2, b - 4, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8)
+    for i, (a, b) in enumerate(zip(plt_x, plt_y)):
+        ax.text(a, b - 2.5, f'{round(b, precision)}%', ha='center', va='bottom', fontsize=8)
 
     if is_asce:
         ax.set_xlabel('Groups(Bad -> Good)')
     else:
         ax.set_xlabel('Groups(Good -> Bad)')
     ax.set_ylabel('Percentage')
+    ax.yaxis.set_major_formatter(FuncFormatter(to_percent))
     ax2.set_ylabel('The number of person')
 
     ax.set_ylim([-upper1 * 0.02, upper1])
@@ -275,6 +277,7 @@ def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=F
 
     plt.xticks(plt_x)
     if is_tick:
+        # plt_x_range = [r.replace('-', '') for r in plt_x_range]
         plt.sca(ax)
         plt.xticks(plt_x, plt_x_range)
         plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='right')
@@ -288,14 +291,13 @@ def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_
     if not ax:
         fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
 
-    lw = 2
     plt_x = df.y_pred_level.tolist()
     plt_x_range = df.y_pred_range.tolist()
 
     # 累积逾期率
     plt_y = round(df.acc_overdue_rate, 3) * 100
     ax.plot(plt_x, plt_y, 
-             linestyle='--', lw=lw, label='accumulate overdue rate',
+             linestyle='--', lw=__LW__, label='accumulate overdue rate',
              marker='o') 
     if is_text:
         for i, (a, b) in enumerate(zip(plt_x, plt_y)):
@@ -304,7 +306,7 @@ def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_
     # 通过率 
     plt_y = round(df.acc_pass_rate, precision) * 100
     ax.plot(plt_x, plt_y, 
-             linestyle='--', lw=lw, label='accumulate passing rate',
+             linestyle='--', lw=__LW__, label='accumulate passing rate',
              marker='o') 
     if is_text:
         for i, (a, b) in enumerate(zip(plt_x, plt_y)):
@@ -313,7 +315,7 @@ def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_
     # 累积好人召回率
     plt_y = round(df.acc_recall_rate_good, precision) * 100
     ax.plot(plt_x, plt_y, 
-             linestyle=':', lw=lw, label='accumulate good person recall rate',
+             linestyle=':', lw=__LW__, label='accumulate good person recall rate',
              marker='o')
     
     if is_text:
@@ -342,9 +344,8 @@ def plot_pr(y_true, y_pred, text='', pos_label=1, ax=None):
     p, r, _ = metrics.precision_recall_curve(y_true, y_pred, pos_label=pos_label)
     f1 = 2 * p * r / (p + r)
 
-    lw = 2
-    ax.plot(r, p, lw=lw, label='P-R curve')
-    ax.plot(r, f1,lw=lw, label='F1 curve')
+    ax.plot(r, p, lw=__LW__, label='P-R curve')
+    ax.plot(r, f1,lw=__LW__, label='F1 curve')
     ax.set_xlim([-0.03, 1.03])
     ax.set_ylim([-0.03, 1.03])
     ax.set_xlabel('Recall Rate')
@@ -426,7 +427,7 @@ def model_cost_cmpt(df, clf, dic_model, label):
     """
     model_result = {}
     for k, v in dic_model.items():
-        print(k)
+        # print(k)
         cols = sorted(v)
 
         tmp_X = df[cols]

@@ -263,18 +263,19 @@ class Bins(WOE):
         return d2['x'].min().tolist()[:1] + d2['x'].max().tolist()
 
 
-    def get_cut_points_by_freq(self, x, num_of_bins=10):
+    def get_cut_points_by_freq(self, x, num_of_bins=10, precision=4):
         interval = 100 / num_of_bins
         cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
-        return cp
+        return np.round(cp, precision).tolist()
 
 
-    def get_cut_points_by_interval(self, x, num_of_bins=10):
+    def get_cut_points_by_interval(self, x, num_of_bins=10, precision=4):
         cp = pd.cut(x, num_of_bins, retbins=True)[1]
-        return cp.tolist()
+        return np.round(cp, precision).tolist()
 
 
-    def bins(self, x, y=None, method='tree', num_of_bins=10, cut_points=None):
+
+    def bins(self, x, y=None, method='tree', num_of_bins=10, cut_points=None, precision=4):
         if cut_points == None:
             if method == 'tree':
                 cut_points = self.get_cut_points_by_tree(x, y)
@@ -283,22 +284,23 @@ class Bins(WOE):
                 cut_points = self.get_cut_points_by_monotonic(x, y, num_of_bins=num_of_bins)
 
             elif method == 'freq':
-                cut_points = self.get_cut_points_by_freq(x, num_of_bins=num_of_bins)
+                cut_points = self.get_cut_points_by_freq(x, num_of_bins=num_of_bins, precision=precision)
 
             elif method == 'interval':
-                cut_points = self.get_cut_points_by_interval(x, num_of_bins=num_of_bins)
+                cut_points = self.get_cut_points_by_interval(x, num_of_bins=num_of_bins, precision=precision)
 
             else:
                 raise Exception('INFO : method must be in (tree, freq, interval).')
         
-            print('cut_points1 :', cut_points)
+            # print('cut_points1 :', cut_points)
             cut_points = [-np.inf] + cut_points[1:-1] + [np.inf]
-            print('cut_points2 :', cut_points)
+            # print('cut_points2 :', cut_points)
 
         df = pd.DataFrame({'x': x, 
                            'y': y, 
-                           'bucket': pd.cut(x, cut_points, include_lowest=True)})
-        return df[['x', 'y', 'bucket']]
+                           'bucket': pd.cut(x, cut_points, include_lowest=True, precision=precision)})
+        return df[['x', 'y', 'bucket']]    
+    
 
 
     def bucket_describe(self, x, y, df_bucket):
