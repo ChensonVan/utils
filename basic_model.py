@@ -48,13 +48,19 @@ class BasicModel(object):
         pass
 
 
-    def get_fscore(self):
+    def get_fscore(self, importance_type='weight'):
         if self.model == None:
             raise Exception('Please fit the data by using model before predict') 
-        try:
-            df = pd.DataFrame(pd.Series(self.model.get_booster().get_fscore())).reset_index(drop=False)
-        except:
-            df = pd.DataFrame(pd.Series(self.model.get_fscore())).reset_index(drop=False)
+        
+        from xgboost.sklearn import XGBClassifier
+        from xgboost.core import Booster
+        if isinstance(self.model, XGBClassifier):
+            df = pd.DataFrame(pd.Series(self.model.get_booster().get_score(importance_type=importance_type))).reset_index(drop=False)
+        elif isinstance(self.model, Booster):
+            df = pd.DataFrame(pd.Series(self.model.get_score(importance_type=importance_type))).reset_index(drop=False)
+        else:
+            raise ValueError('Tree must be Booster or XGBModel')
+
         df.columns = ['feature_name', 'feature_importance']
         df = df.sort_values('feature_importance', ascending=False)
         df = df.reset_index(drop=True)

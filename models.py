@@ -89,7 +89,7 @@ class XGB_Classifier2(BasicModel):
         self.params = {
                         'booster'       : 'gbtree',
                         'objective'     : 'binary:logistic',    # 多分类的问题
-                        'num_class'     : 2,                    # 类别数，与 multisoftmax 并用
+                        # 'num_class'     : 2,                    # 类别数，与 multisoftmax 并用
                         'gamma'         : 0.1,                  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
                         'max_depth'     : 6,                    # 构建树的深度，越大越容易过拟合
                         'lambda'        : 20,                   # 控制模型复杂度的权重值的L2正则化项参数，参数越大，模型越不容易过拟合。
