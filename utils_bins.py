@@ -266,7 +266,8 @@ class Bins(WOE):
     def get_cut_points_by_freq(self, x, num_of_bins=10, precision=4):
         interval = 100 / num_of_bins
         cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
-        return np.round(cp, precision).tolist()
+        cp = np.round(cp, precision).tolist()
+        return sorted(set(cp))
 
 
     def get_cut_points_by_interval(self, x, num_of_bins=10, precision=4):

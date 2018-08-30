@@ -89,16 +89,18 @@ class XGB_Classifier2(BasicModel):
         self.params = {
                         'booster'       : 'gbtree',
                         'objective'     : 'binary:logistic',    # 多分类的问题
-                        # 'num_class'     : 2,                    # 类别数，与 multisoftmax 并用
-                        'gamma'         : 0.1,                  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
-                        'max_depth'     : 6,                    # 构建树的深度，越大越容易过拟合
+                        # 'num_class'     : 2,                  # 类别数，与 multisoftmax 并用
+                        'gamma'         : 5,                    # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
+                        'max_depth'     : 2,                    # 构建树的深度，越大越容易过拟合
                         'lambda'        : 20,                   # 控制模型复杂度的权重值的L2正则化项参数，参数越大，模型越不容易过拟合。
-                        'subsample'     : 0.7,                  # 随机采样训练样本
-                        'colsample_bytree': 0.7,                # 生成树时进行的列采样
-                        'scale_pos_weight': 1,
+                        'alpha'         : 20,
+                        'subsample'     : 0.8,                  # 随机采样训练样本
+                        'colsample_bytree' : 0.8,               # 生成树时进行的列采样
+                        'colsample_bylevel': 0.8,
+                        'scale_pos_weight' : 1,
                         'silent'        : 1,                    # 设置成1则没有运行信息输出，最好是设置为0.
                         'eta'           : 0.01,                 # 如同学习率
-                        'seed'          : 1000,
+                        'seed'          : 0,
                         'nthread'       : 2,                    # cpu 线程数
                         'eval_metric'   : 'auc'
                     }
@@ -108,11 +110,11 @@ class XGB_Classifier2(BasicModel):
         pass
 
 
-    def train(self, x_train, y_train, x_val, y_val, params=None, is_eval=False, is_verbose=False):
+    def train(self, x_train, y_train, x_val, y_val, params=None, verbose_eval=False):
         dtrain = xgb.DMatrix(x_train, y_train)
         dval = xgb.DMatrix(x_val, y_val)
         watchlist = [(dtrain, 'train'), (dval, 'eval')]
-        self.model = xgb.train(params, dtrain, self.num_rounds, watchlist, early_stopping_rounds=self.early_stopping_rounds)
+        self.model = xgb.train(params, dtrain, self.num_rounds, watchlist, early_stopping_rounds=self.early_stopping_rounds, verbose_eval=verbose_eval)
         print('INFO : bset_iteration is', self.model.best_iteration)
         self.best_iteration = self.model.best_iteration
 
