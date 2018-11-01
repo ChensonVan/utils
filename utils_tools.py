@@ -181,3 +181,21 @@ def sample(df, overduerate=0.17, target='14d', random_state=2017):
     else:
         return df
     return df2
+
+
+def _get_random_time(start=1510987104669, end=1540987104669, seed=None):
+    import random, time
+    if not seed:
+        t = random.uniform(start, end)
+    else:
+        random.seed(seed)
+        t = random.uniform(start, end)
+    dt = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t / 1000))
+    return dt
+
+def get_random_time(start=1510987104669, end=1540987104669, prefix=''):
+    dt = _get_random_time(start, end)
+    if prefix:
+        while not dt.startswith(prefix):
+            dt = _get_random_time(start, end)
+    return dt
