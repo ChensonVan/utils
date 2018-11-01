@@ -206,9 +206,9 @@ def bins_freq(data, num_of_bins=10, labels=None, precision=4):
     return:  分箱后的label
     '''
     if labels == None:
-        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=precision, retbins=True)
+        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=precision, retbins=True, duplicates='drop')
     else:
-        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=precision, retbins=True, labels=labels)
+        r = pd.qcut(data, q=np.linspace(0, 1, num_of_bins+1), precision=precision, retbins=True, labels=labels, duplicates='drop')
     return r[0]
 
 

@@ -43,8 +43,8 @@ def features_analyse(pyce, df, num_fea, fea_str, target='14d', prefix='Feature_a
 
     if save_result:
         pyce.write_recoding_txt(statement_recoding, file=out_feature_recoding, encoding='utf-8')
-        df_profile.to_excel(out_features_profile, encoding='gbk', index=False)
-        df_statistics.to_excel(out_features_statistics, encoding='gbk', index=False)
+        df_profile.astype(str).to_excel(out_features_profile, encoding='gbk', index=False)
+        df_statistics.astype(str).to_excel(out_features_statistics, encoding='gbk', index=False)
     print('INFO : Analyse Finished.')
 
     if exec_recoding:
