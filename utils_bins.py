@@ -264,6 +264,8 @@ class Bins(WOE):
 
 
     def get_cut_points_by_freq(self, x, num_of_bins=10, precision=4):
+        x = pd.Series(x)
+        x = x[pd.notnull(x)]
         interval = 100 / num_of_bins
         cp = sorted(set(np.percentile(x,  i * interval) for i in range(num_of_bins + 1)))
         cp = np.round(cp, precision).tolist()
@@ -374,4 +376,17 @@ class Bins(WOE):
             # print(traceback.format_exc())
             print('__ERROR__')
             return np.nan, np.nan
-            
+
+    def calc_iv(x_bucket, y):
+        pos = np.sum(y == 0)
+        neg = np.sum(y == 1)
+        pos_group = np.zeros(np.unique(x_bucket).shape)
+        neg_group = np.zeros(np.unique(x_bucket).shape)
+        for i in range(len(np.unique(x_bucket))):
+            pos_group[i] = y[(x_bucket == np.unique(x_bucket)[i])
+                             & (y == 0)].count()
+            neg_group[i] = y[(x_bucket == np.unique(x_bucket)[i])
+                             & (y == 1)].count()
+        iv = np.sum((pos_group/pos - neg_group/neg) *
+                    np.log((pos_group/pos)/(neg_group/neg)))
+        return iv
