@@ -457,3 +457,53 @@ def model_cost_cmpt(df, clf, dic_model, label):
 
     return model_result
 
+
+
+def plot_line(x, y, text, xlabel='', ylabel='', ax=None):
+    if not ax:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+    x, y = pd.Series(x), pd.Series(y)
+    ax.plot(x, y, lw=2, label=text, marker='o')
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.legend(loc='best')
+
+
+def plot_overdue(dic_bins, isolate=True):
+    if not isolate:
+        fig, axs = plt.subplots(1, 2, figsize=(8 * 2, 6 * 1), dpi=100)
+        for k, bins in dic_bins.items():
+            x = bins['y_pred_level']
+            y1 = bins['single_overdue_rate']
+            y2 = bins['acc_overdue_rate']
+            plot_line(x, y1, f'{k} single overdue rate',
+                      xlabel='level', ylabel='single-overdue', ax=axs[0])
+            plot_line(x, y2, f'{k} acc overdue rate',
+                      xlabel='level', ylabel='acc-overdue', ax=axs[1])
+        plt.tight_layout()
+        axs[0].set_title('single_overdue_rate')
+        axs[1].set_title('acc_overdue_rate')
+    plt.show()
+
+def model_compare(df, model_list, pid_list, target='1d', score='score', cut_points=None):
+    dic = {}
+    dic_bin = {}
+    ModelMonitor = umm.ModelMonitor()
+    for i in model_list:
+        y = df[(df.model_record_model_id == i) & (
+            df.product_deadline.isin(pid_list))][target]
+        s = df[(df.model_record_model_id == i) & (
+            df.product_deadline.isin(pid_list))][score]
+
+        if cut_points is None:
+            cut_points = [-np.inf] + \
+                ModelMonitor.get_cut_points_by_freq(s)[1:-1] + [np.inf]
+        lb = list(range(len(cut_points) - 1, 0, -1))
+        df_bins = sta_groups(y, s, cut_points=cut_points)
+        # df_bins = sta_groups(y, s, cut_points=cut_points, labels=lb)
+        dic_bin['M' + str(i)] = df_bins
+        dic['M' + str(i)] = [y, -s]
+    me.plot_evaluation(dic, isolate=True)
+    plot_overdue(dic_bin, isolate=False)
+    return dic_bin
