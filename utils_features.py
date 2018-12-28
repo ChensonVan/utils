@@ -509,6 +509,59 @@ def feature_selection(X, y, feature_n, method, alpha=0.05, stepwise=True):
                     print(i +' removed: pvalue: ' + str(model_stepwise_backford.pvalues[i]))
     return selected
 
+def get_od_ratio(y_test, y_pred_test, ps=55):
+    df_tmp = pd.concat([pd.Series(list(y_test)), pd.Series(list(y_pred_test))], axis=1)
+    df_tmp.columns = ['y_true', 'y_pred']
+
+    th = np.percentile(df_tmp.y_pred, ps)
+
+    df_tmp.y_true.mean()
+    r = df_tmp[df_tmp.y_pred <= th].y_true.mean()
+    return r
+
+
+def _get_cover_ratio(df, time_col='apply_risk_created_at', time_format='%Y-%m-%d', 
+                     time_span='day', decimals=4, exclude_cols=[]):
+    df2 = df.notnull()
+    feas = [fea for fea in df.columns if fea != time_col and fea not in exclude_cols]
+    if time_span == 'day':
+        df2['date'] = pd.to_datetime(df[time_col], format=time_format).dt.date
+    elif time_span == 'month':
+        df2['date'] = pd.to_datetime(df[time_col], format=time_format).astype(str).str[:7]
+    else:
+        raise ValueError("Error: Got unexpected time_span value.")
+        
+    tmp1 = df2.groupby('date')[[time_col]].agg(len).reset_index()
+    tmp1.columns = ['date', 'count']
+    tmp2 = df2.groupby('date')[feas].agg(np.mean).reset_index()
+    return pd.merge(tmp1, tmp2, on='date')
+
+def _get_col_widths(dataframe):
+    # First we find the maximum length of the index column   
+    # Then, we concatenate this to the max of the lengths of column name and its values for each column, left to right
+    return [max([len(str(s)) for s in dataframe[col].values] + [len(col)]) for col in dataframe.columns]
+
+def _write_cov_ratio(df, file_name='conditional_format2.xlsx'):
+    import xlsxwriter
+    writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='cover_ratio', index=False)
+
+    h, w = df.shape
+    
+    workbook  = writer.book
+    worksheet = writer.sheets['cover_ratio']
+        
+    # idx = xlsxwriter.utility.xl_range_abs(1, 2, h, w-1).replace('$', '')
+    idx = xlsxwriter.utility.xl_range_abs(1, 2, h, w-1)
+    worksheet.conditional_format(idx, {'type': '3_color_scale'})
+
+    sheet_format = workbook.add_format({'num_format': '0%'})
+    worksheet.set_column(idx, None, sheet_format)
+    
+    for i, width in enumerate(_get_col_widths(df)):
+        worksheet.set_column(i, i, width)
+    writer.save()
+
 
 
 if __name__ == '__main__':
