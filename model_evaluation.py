@@ -377,6 +377,20 @@ def plot_auc(y_true_list, y_pred_list, label_list, precision=3, ax=None):
     ax.set_ylim([-0.03, 1.03])
     ax.set_ylabel('True Positive Rate')
     ax.set_xlabel('False Positive Rate')
+
+
+def stat_level(df, level, score, target):
+    df2 = df[[level, score, target]]
+    df2['tmp'] = 1
+    df_tmp = df2.pivot_table(index=level, columns=['tmp'], 
+                    aggfunc={score : [np.mean, min, max], target : [np.mean, len, sum]})
+    df_tmp.reset_index(drop=False, inplace=True)
+    df_tmp.columns = ['y_pred_level', 'count', 'single_overdue_rate', 'hit', 'score_max', 'score_mean', 'score_min']
+    df_tmp['y_pred_range'] = df_tmp['score_min'].astype(str) + '~' + df_tmp['score_max'].astype(str)
+    df_tmp['acc_count'] = df_tmp['count'].cumsum()
+    df_tmp['acc_hit'] = df_tmp['hit'].cumsum()
+    df_tmp['acc_overdue_rate'] = df_tmp['acc_hit'] / df_tmp['acc_count']
+    return df_tmp
     
     
 def sta_groups(y_true, y_pred, cut_points=None, labels=list(range(1, 11))):
