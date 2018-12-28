@@ -116,7 +116,7 @@ class HiveLib:
 
     # 从我的Hive数据库 dm_fan_cx 里面读取table，存成本地的csv文件，存到datasource下（jupyter文件系统，即hadoop-hd5下）
     def createTableFromLocal(self, library, table, file_path, delimiter='\x01',
-                             overwrite_table=False, seq=',',  encoding=None):
+                             overwrite_table=False, seq=',',  encoding=None, prefix=True):
         """
         args:
             library:         库名
@@ -141,8 +141,12 @@ class HiveLib:
             raise Exception('INFO  : Input file format must be in (csv, xlsx, pkl).\nCannot read this file!') 
         
         table = table.lower()
-        table_name = f'{library}.{self.user}_{table}'
-        table_path = f'{self.root}/{library}.db/{self.user}_{table}'
+        if prefix:
+            table_name = f'{library}.{self.user}_{table}'
+            table_path = f'{self.root}/{library}.db/{self.user}_{table}'
+        else:
+            table_name = f'{library}.{table}'
+            table_path = f'{self.root}/{library}.db/{table}'
 
         # 是否重写该 table
         if overwrite_table:

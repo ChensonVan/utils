@@ -110,11 +110,11 @@ class XGB_Classifier2(BasicModel):
         pass
 
 
-    def train(self, x_train, y_train, x_val, y_val, params=None, verbose_eval=False):
+    def train(self, x_train, y_train, x_val, y_val, verbose_eval=False):
         dtrain = xgb.DMatrix(x_train, y_train)
         dval = xgb.DMatrix(x_val, y_val)
         watchlist = [(dtrain, 'train'), (dval, 'eval')]
-        self.model = xgb.train(params, dtrain, self.num_rounds, watchlist, early_stopping_rounds=self.early_stopping_rounds, verbose_eval=verbose_eval)
+        self.model = xgb.train(self.params, dtrain, self.num_rounds, watchlist, early_stopping_rounds=self.early_stopping_rounds, verbose_eval=verbose_eval)
         print('INFO : bset_iteration is', self.model.best_iteration)
         self.best_iteration = self.model.best_iteration
 
