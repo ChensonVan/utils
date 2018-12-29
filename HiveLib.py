@@ -203,6 +203,41 @@ class HiveLib:
             print('INFO  :', line)        
         os.remove(temp_file)
 
+
+# 此脚本用于连接presto
+import prestodb
+class PrestoLib:
+    def __init__(self,
+                 host='10.105.110.176',
+                 port=8080,
+                 user='mapeng',
+                 catalog='hive',
+                 schema='dwb',
+                 ):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.catalog = catalog
+        self.schema = schema
+
+
+    def execute(sql):
+        # 获取presto的连接
+        conn = prestodb.dbapi.connect(
+            host=self.host,
+            port=self.port,
+            user=self.user,
+            catalog=self.catalog,
+            schema=self.schema,
+        )
+        cur = conn.cursor()
+        cur.execute(sql)
+
+        rows = cur.fetchall()
+        conn.commit()
+        conn.close()
+        return rows
+
         
 if __name__ == '__main__':
     print('test')
