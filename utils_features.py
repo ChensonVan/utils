@@ -55,7 +55,7 @@ def sta_cov_rate(df):
     return np.round(cr, 3)
 
 
-def get_labels(df_meta, col, labels=[0, 1, 3, 7, 14, 30]):
+def get_labels(df_meta, col=['first_main_report_time', 'first_expect_at'], labels=[0, 1, 3, 7, 14, 30]):
     import datetime
     nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # 现在
     df = df_meta.copy()

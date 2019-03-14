@@ -221,7 +221,7 @@ class PrestoLib:
         self.schema = schema
 
 
-    def execute(sql):
+    def execute(self, sql):
         # 获取presto的连接
         conn = prestodb.dbapi.connect(
             host=self.host,
