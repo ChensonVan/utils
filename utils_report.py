@@ -303,6 +303,7 @@ def cal_level_distribution(df, target='score', agg_col='apply_day', span=7):
     e.g. cal_level_distribution(df_tmp, span=14)
     """
     unique_list = sorted(df[agg_col].unique().tolist())
+    ascending=False
     
     mm = ModelMonitor()
     cp = [350] + mm.get_cut_points_by_freq(df[target])[1:-1] + [950]
@@ -313,9 +314,10 @@ def cal_level_distribution(df, target='score', agg_col='apply_day', span=7):
         time_span = unique_list[idx_s : idx_e]
         df_tmp = df[df[agg_col].isin(time_span)]
         df_tmp['level'] = pd.cut(df_tmp[target], bins=cp, labels=list(range(10, 0, -1)))
-        dis = (df_tmp['level'].value_counts().sort_index(ascending=False) / df_tmp.shape[0]).tolist()
+        dis = (df_tmp['level'].value_counts().sort_index(ascending=ascending) / df_tmp.shape[0]).tolist()
+        idx = df_tmp['level'].value_counts().sort_index(ascending=ascending).index.tolist()
         result.append([unique_list[idx_s] + '~' + unique_list[idx_e]] + dis)
-    return_cols = ['apply_span'] + [f'level_{i}' for i in range(1, 11)]
+    return_cols = ['apply_span'] + [f'level_{i}' for i in idx]
     return pd.DataFrame(result, columns=return_cols)
 
 
