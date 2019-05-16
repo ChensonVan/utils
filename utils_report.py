@@ -7,10 +7,17 @@ import numpy as np
 
 from collections import defaultdict
 import math
-import os
+import os, sys
+
+sys.path.append('/data4/dm_share')
+from mlearn import mlearn
+
+from .utils_model_monitor import ModelMonitor
+from .model_evaluation import cal_metrics
+
 
 # 以下用于模型报告
-def _get_cover_ratio(df, time_col='apply_risk_created_at', time_format='%Y-%m-%d', 
+def get_cover_ratio(df, time_col='apply_risk_created_at', time_format='%Y-%m-%d', 
                      time_span='day', decimals=4, exclude_cols=[]):
     df2 = df.notnull()
     feas = [fea for fea in df.columns if fea != time_col and fea not in exclude_cols]
@@ -33,7 +40,7 @@ def _get_col_widths(dataframe):
     return [max([len(str(s)) for s in dataframe[col].values] + [len(col)]) for col in dataframe.columns]
 
 
-def _write_cov_ratio(df, file_name='conditional_format2.xlsx'):
+def write_cov_ratio(df, file_name='conditional_format2.xlsx'):
     import xlsxwriter
     writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
     df.to_excel(writer, sheet_name='cover_ratio', index=False)
@@ -62,8 +69,8 @@ def generate_data_report(clf, df_train, df_oot, fea_in, report_path, suffix, pic
     report_dst = os.path.join(os.getcwd(), report_path)
         
     df = pd.concat([df_train, df_oot])
-    df_cov_ratio = ur._get_cover_ratio(df[fea_in], time_span='day')
-    ur._write_cov_ratio(df_cov_ratio, file_name=report_path  + f'/{suffix}_feature_cov_ratio.xlsx')
+    df_cov_ratio = get_cover_ratio(df[fea_in], time_span='day')
+    write_cov_ratio(df_cov_ratio, file_name=report_path  + f'/{suffix}_feature_cov_ratio.xlsx')
     
     mlearn.reporter.spliter_report(df_train[fea_in], df_oot[fea_in], 
                                    'apply_risk_created_at', '14d', report_dst)
@@ -276,3 +283,61 @@ def dfs_to_excel(df_dic, file_name=None, index=True):
     for name, df in df_dic.items():
         df.to_excel(writer, sheet_name=name, index=index)
     writer.save()
+
+
+def _get_auc_ks_mean(df, cols=['14d', 'score']):
+    ks, ac, pr, rc, fpr, tpr, thr_point = cal_metrics(df[cols[0]], df[cols[1]])
+    if ac < 0.5:
+        ks, ac, pr, rc, fpr, tpr, thr_point = cal_metrics(df[cols[0]], -df[cols[1]])
+    mean = df[cols[0]].mean()
+    return ks, ac, mean
+
+
+def cal_level_distribution(df, target='score', agg_col='apply_day', span=7):
+    """
+    df:
+    target:
+    agg_col:
+    span:
+    
+    e.g. cal_level_distribution(df_tmp, span=14)
+    """
+    unique_list = sorted(df[agg_col].unique().tolist())
+    
+    mm = ModelMonitor()
+    cp = [350] + mm.get_cut_points_by_freq(df[target])[1:-1] + [950]
+    
+    result = []
+    for idx_s in list(range(0, len(unique_list) - span)):
+        idx_e = min(idx_s + span, len(unique_list) - 1)
+        time_span = unique_list[idx_s : idx_e]
+        df_tmp = df[df[agg_col].isin(time_span)]
+        df_tmp['level'] = pd.cut(df_tmp[target], bins=cp, labels=list(range(10, 0, -1)))
+        dis = (df_tmp['level'].value_counts().sort_index(ascending=False) / df_tmp.shape[0]).tolist()
+        result.append([unique_list[idx_s] + '~' + unique_list[idx_e]] + dis)
+    return_cols = ['apply_span'] + [f'level_{i}' for i in range(1, 11)]
+    return pd.DataFrame(result, columns=return_cols)
+
+
+def cal_rolling(df, metric, metric_args, return_cols=['apply_span', 'ks', 'auc', 'overdue'], agg_col='apply_day', span=7):
+    """
+    df:
+    metric:
+    metric_args:
+    return_cols:
+    agg_col:
+    span:
+    
+    e.g. cal_rolling(df_tmp, _get_auc_ks_mean, ['14d', 'score'], span=14)
+    """
+    unique_list = sorted(df[agg_col].unique().tolist())
+    metric_vals = []
+    for idx_s in list(range(0, len(unique_list) - span)):
+        idx_e = min(idx_s + span, len(unique_list) - 1)
+        time_span = unique_list[idx_s : idx_e]
+        df_tmp = df[df[agg_col].isin(time_span)]
+        
+        ks, ac, mean = metric(df_tmp, metric_args)
+        metric_vals.append([unique_list[idx_s] + '~' + unique_list[idx_e], ks, ac, mean])
+    return pd.DataFrame(metric_vals, columns=return_cols)
+
