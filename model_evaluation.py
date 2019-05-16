@@ -45,9 +45,9 @@ def cal_metrics(y_true, y_pred, thr_point=None, precision=3):
     return ks, ac, pr, rc, fpr, tpr, thr_point
 
 
-def plot_ks(y_true, y_pred, text='', ax=None):
+def plot_ks(y_true, y_pred, text='', ax=None, dpi=100):
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
 
     df = pd.DataFrame()
     df['y_true'] = np.array(y_true)
@@ -77,12 +77,12 @@ def plot_ks(y_true, y_pred, text='', ax=None):
     return threshold, max_ks
 
 
-def plot_ks_2(y_true, y_pred, text='', ax=None):
+def plot_ks_2(y_true, y_pred, text='', ax=None, dpi=100):
     from sklearn.metrics import roc_curve, auc
     import matplotlib.pyplot as plt
 
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
     
     fpr, tpr, thresholds = roc_curve(y_true, y_pred)
     ks = max(tpr - fpr)
@@ -107,9 +107,9 @@ def plot_ks_2(y_true, y_pred, text='', ax=None):
     ax.legend(loc='best')
     
            
-def plot_lift(y_true, y_pred, text='', num_of_bins=100, ax=None):
+def plot_lift(y_true, y_pred, text='', num_of_bins=100, ax=None, dpi=100):
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
 
     y_true, y_pred = pd.Series(y_true), pd.Series(y_pred)
     cut_points = [-np.inf] + get_cut_points_by_freq(-y_pred, num_of_bins=num_of_bins)[1: -1] + [np.inf]
@@ -135,7 +135,7 @@ def plot_lift(y_true, y_pred, text='', num_of_bins=100, ax=None):
     ax.legend(loc='best')
 
 
-def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False, is_tick=False):
+def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isolate=False, is_tick=False, dpi=100):
     """
     Args:
         df_dic:
@@ -148,7 +148,7 @@ def plot_evaluation(df_dic, path='model_evaluations.png', ascending=False, isola
         plot_evaluation({'YF_v2 + App (train)': [y_train, y_pred_all_train], 'YF_v2 + App (test)': [y_test, y_pred_all]})
     """
     num_col, num_row = len(df_dic), 4
-    fig, axs = plt.subplots(num_row, num_col, figsize=(8 * num_col, 6 * num_row), dpi=100)
+    fig, axs = plt.subplots(num_row, num_col, figsize=(8 * num_col, 6 * num_row), dpi=dpi)
     
     label_list = list(df_dic.keys())
     y_true_list = [df_dic[lab][0] for lab in label_list]
@@ -232,12 +232,12 @@ def bins_points(data, cut_points, labels=None):
     return r
 
 
-def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=False, ax=None, precision=3):
+def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=False, ax=None, precision=3, dpi=100):
     from matplotlib.ticker import FuncFormatter 
     def to_percent(temp, position):  
         return '%1.0f'% temp + '%' 
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
     ax2 = ax.twinx()                                    # 创建第二个坐标轴（设置 xticks 的时候使用 ax）
     width = 0.5
 
@@ -286,10 +286,10 @@ def sorting_ability(df, upper1=50, upper2=100, text='', is_tick=False, is_asce=F
     ax.set_title(f'{text} sorting ability')
 
 
-def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_asce=False, ax=None):
+def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_asce=False, ax=None, dpi=100):
     #### 累积逾期率、通过率和好人召回率图
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
 
     plt_x = df.y_pred_level.tolist()
     plt_x_range = df.y_pred_range.tolist()
@@ -338,9 +338,9 @@ def plot_acc_od_ps_rc(df, text='', precision=3, is_text=True, is_tick=False, is_
     ax.legend(loc='best')
 
 
-def plot_pr(y_true, y_pred, text='', pos_label=1, ax=None):
+def plot_pr(y_true, y_pred, text='', pos_label=1, ax=None, dpi=100):
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
     p, r, _ = metrics.precision_recall_curve(y_true, y_pred, pos_label=pos_label)
     f1 = 2 * p * r / (p + r)
 
@@ -354,12 +354,10 @@ def plot_pr(y_true, y_pred, text='', pos_label=1, ax=None):
     ax.legend(loc='best')
     
     
-    
-    
-def plot_auc(y_true_list, y_pred_list, label_list, precision=3, ax=None):
+def plot_auc(y_true_list, y_pred_list, label_list, precision=3, ax=None, dpi=100):
     # 计算 阈值
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
     ks, ac, pr, rc, fpr, tpr, thr_point = cal_metrics(y_true_list[0], y_pred_list[0], precision=precision)
 
     ax.set_title('Receiver Operating Characteristic')
@@ -459,9 +457,9 @@ def model_cost_cmpt(df, clf, dic_model, label):
 
 
 
-def plot_line(x, y, text, xlabel='', ylabel='', ax=None):
+def plot_line(x, y, text, xlabel='', ylabel='', ax=None, dpi=100):
     if not ax:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6), dpi=dpi)
     x, y = pd.Series(x), pd.Series(y)
     ax.plot(x, y, lw=2, label=text, marker='o')
 
@@ -470,9 +468,9 @@ def plot_line(x, y, text, xlabel='', ylabel='', ax=None):
     ax.legend(loc='best')
 
 
-def plot_overdue(dic_bins, isolate=True):
+def plot_overdue(dic_bins, isolate=True, dpi=100):
     if not isolate:
-        fig, axs = plt.subplots(1, 2, figsize=(8 * 2, 6 * 1), dpi=100)
+        fig, axs = plt.subplots(1, 2, figsize=(8 * 2, 6 * 1), dpi=dpi)
         for k, bins in dic_bins.items():
             x = bins['y_pred_level']
             y1 = bins['single_overdue_rate']
